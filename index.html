@@ -6,8 +6,6 @@
   <title>長者肩關節復健航行 | Elderly Shoulder Rehab River Sail</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
-  <!-- MediaPipe Pose Libraries (loaded asynchronously with graceful simulator fallback) -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous" defer></script>
   <style>
     :root {
       font-family: 'Noto Sans TC', 'Inter', system-ui, -apple-system, sans-serif;
@@ -18,13 +16,14 @@
       overflow-x: hidden;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    /* Custom High-Contrast Sliders for Elderly / Caregiver Accessibility */
+    /* High-contrast elderly-friendly slider */
     input[type="range"].rehab-slider {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
-      height: 12px;
+      height: 14px;
       border-radius: 999px;
       background: #1e293b;
       outline: none;
@@ -33,33 +32,15 @@
     input[type="range"].rehab-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: #38bdf8;
       border: 3px solid #ffffff;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-      transition: transform 0.12s ease, background-color 0.12s ease;
     }
-    input[type="range"].rehab-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.12);
-      background: #0284c7;
-    }
-    input[type="range"].rehab-slider.amber-thumb::-webkit-slider-thumb {
-      background: #fbbf24;
-    }
-    input[type="range"].rehab-slider.emerald-thumb::-webkit-slider-thumb {
-      background: #34d399;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.55); }
-      50% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(251, 191, 36, 0); }
-    }
-    .pause-banner-pulse {
-      animation: pulseGlow 2s infinite ease-in-out;
-    }
-    /* One-Tap Fullscreen Portrait Mode for iPhone on a Table */
+    /* One-Tap Fullscreen Portrait Mode for Smartphone on a Table */
     body.portrait-table-mode {
       overflow: hidden;
     }
@@ -72,460 +53,457 @@
       margin: 0 auto !important;
       border-radius: 0 !important;
       border-width: 0 !important;
-      z-index: 50 !important;
+      z-index: 40 !important;
       box-shadow: 0 0 0 9999px #020617 !important;
     }
     body.portrait-table-mode #pipContainer {
-      width: 196px !important;
+      width: 184px !important;
       bottom: 84px !important;
       right: 12px !important;
       border-width: 3px !important;
     }
     body.portrait-table-mode #cueBanner {
-      top: 64px !important;
+      top: 66px !important;
+    }
+    .device-card-active {
+      border-color: #38bdf8 !important;
+      background-color: rgba(14, 165, 233, 0.18) !important;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.45);
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
 
-  <!-- Top Header & Clinical Status Bar -->
-  <header class="w-full bg-slate-900/95 border-b border-slate-800 px-3 py-2.5 sticky top-0 z-30 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <!-- Brand & Purpose -->
+  <!-- ======================================================================= -->
+  <!-- STARTUP DEVICE & OS AUTO-DETECTION OVERLAY                              -->
+  <!-- ======================================================================= -->
+  <div id="deviceSetupModal" class="fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="max-w-xl w-full bg-slate-900 border-2 border-slate-700 rounded-3xl p-5 sm:p-7 shadow-2xl">
+      <div class="text-center mb-5">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-sky-500/20 border-2 border-sky-400/50 flex items-center justify-center text-4xl mb-3">
+          ⛵
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-white">肩關節復健激流航行</h1>
+        <p class="text-sm text-slate-300 mt-1">請選擇您正在使用的電子設備，系統將自動為您調校最佳流暢度</p>
+      </div>
+
+      <!-- Auto-Detected OS Banner -->
+      <div id="osAutoDetectBox" class="mb-5 rounded-2xl p-3.5 bg-slate-950 border border-emerald-500/50 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span id="osDetectIcon" class="text-2xl">🔍</span>
+          <div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">自動系統識別 · Auto-Detected OS</div>
+            <div id="osDetectTitle" class="text-sm sm:text-base font-black text-emerald-300">正在偵測系統...</div>
+          </div>
+        </div>
+        <span id="osEngineBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 whitespace-nowrap">
+          GPU 加速
+        </span>
+      </div>
+
+      <!-- Optional Warning for In-App Browsers (WeChat / WhatsApp / IG) -->
+      <div id="inAppWarnBox" class="hidden mb-4 rounded-2xl p-3 bg-amber-500/15 border border-amber-400/50 text-xs sm:text-sm text-amber-200 font-semibold">
+        ⚠️ 偵測到您正在使用 App 內建瀏覽器，建議點選右下角改用 <strong>Safari / Chrome</strong> 開啟，鏡頭追蹤會更流暢。
+      </div>
+
+      <!-- 3 Big Tappable Device Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <button type="button" data-device="phone" class="device-select-btn rounded-2xl p-4 bg-slate-950 border-2 border-slate-700 hover:border-sky-400 text-center transition flex flex-col items-center gap-1.5">
+          <span class="text-4xl">📱</span>
+          <span class="text-base font-black text-white">手機</span>
+          <span class="text-xs text-slate-400">Smartphone</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-sky-300 font-bold mt-1">直立桌面極速</span>
+        </button>
+
+        <button type="button" data-device="tablet" class="device-select-btn rounded-2xl p-4 bg-slate-950 border-2 border-slate-700 hover:border-sky-400 text-center transition flex flex-col items-center gap-1.5">
+          <span class="text-4xl">📲</span>
+          <span class="text-base font-black text-white">平板電腦</span>
+          <span class="text-xs text-slate-400">iPad / Tablet</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-emerald-300 font-bold mt-1">大畫面護眼</span>
+        </button>
+
+        <button type="button" data-device="desktop" class="device-select-btn rounded-2xl p-4 bg-slate-950 border-2 border-slate-700 hover:border-sky-400 text-center transition flex flex-col items-center gap-1.5">
+          <span class="text-4xl">💻</span>
+          <span class="text-base font-black text-white">電腦 / 筆電</span>
+          <span class="text-xs text-slate-400">Desktop / Laptop</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 font-bold mt-1">標準寬螢幕</span>
+        </button>
+      </div>
+
+      <!-- Confirm & Enter Game Button -->
+      <button id="btnConfirmDevice" type="button" class="w-full py-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-lg shadow-xl transition">
+        ✅ 確認設備並開始航行 · Start Sailing
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TOP HEADER BAR (No backdrop-blur for 60 FPS iOS Safari compositing)     -->
+  <!-- ======================================================================= -->
+  <header class="w-full bg-slate-900 border-b border-slate-800 px-3 py-2.5 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand + Detected Device Badge -->
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-2xl shadow-inner" aria-hidden="true">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-2xl" aria-hidden="true">
           ⛵
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-black tracking-tight text-white">肩關節復健激流航行</h1>
-            <span class="hidden md:inline-block text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-              無壓力復健模式 · Stress-Free Rehab
-            </span>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base sm:text-lg font-black tracking-tight text-white">肩關節復健激流航行</h2>
+            <button id="btnReopenDeviceModal" type="button" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition">
+              <span id="headerDeviceBadge">📱 iOS 手機模式</span> ▾
+            </button>
           </div>
-          <p class="text-xs text-slate-400">手肘彎曲 90° 握拳向上 · 抬高右臂向左傾、抬高左臂向右傾（翹翹板原理）</p>
+          <p class="text-xs text-slate-400">手肘彎曲 90° 握拳向上 · 抬右臂向左轉、抬左臂向右轉</p>
         </div>
       </div>
 
-      <!-- Action Toolbar -->
+      <!-- Simplified Action Buttons -->
       <div class="flex flex-wrap items-center gap-2">
-        <!-- One-Tap iPhone Fullscreen Portrait Mode Button -->
-        <button id="btnPortraitFullscreen" type="button" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md transition flex items-center gap-1.5">
+        <button id="btnPortraitFullscreen" type="button" class="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center gap-1.5">
           <span>📱</span>
-          <span id="portraitBtnLabel">全螢幕直立模式 / iPhone Table Mode</span>
+          <span id="portraitBtnLabel">全螢幕直立</span>
         </button>
 
-        <!-- Camera Start / Switch Button -->
-        <button id="btnToggleCamera" type="button" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md transition flex items-center gap-1.5">
-          <span id="camBtnIcon">📷</span>
-          <span id="camBtnLabel">開啟手機鏡頭 / Start Camera</span>
+        <button id="btnToggleCamera" type="button" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition flex items-center gap-1.5">
+          <span>📷</span>
+          <span id="camBtnLabel">開啟鏡頭</span>
         </button>
 
-        <!-- Flip Front/Back Camera (Smartphone convenience) -->
-        <button id="btnFlipCamera" type="button" class="hidden px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition items-center gap-1" title="切換前後鏡頭 / Flip Camera">
+        <button id="btnFlipCamera" type="button" class="hidden px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition items-center gap-1">
           <span>🔄</span>
-          <span class="hidden sm:inline">切換鏡頭</span>
+          <span>前後鏡</span>
         </button>
 
-        <!-- Voice & Sound Cues Toggle -->
-        <button id="btnToggleAudio" type="button" class="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5">
+        <button id="btnToggleAudio" type="button" class="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1">
           <span id="audioIcon">🔊</span>
-          <span id="audioLabel">語音及音效：開 / Voice On</span>
+          <span id="audioLabel">語音開</span>
         </button>
 
-        <!-- Reset Session -->
         <button id="btnResetSession" type="button" class="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-          🔄 重置紀錄 / Reset
+          🔄 重置
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Responsive Layout -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+  <!-- ======================================================================= -->
+  <!-- MAIN SIMPLIFIED LAYOUT                                                  -->
+  <!-- ======================================================================= -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-2.5 sm:p-4 flex flex-col gap-3.5">
 
-    <!-- LEFT / CENTER COLUMN: Sega-Style Vertical River Stream Game Canvas (7 cols on lg) -->
-    <section class="lg:col-span-7 flex flex-col gap-3 w-full">
-
-      <!-- Live Telemetry KPI Strip (Large fonts for elderly readability) -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between">
-          <span class="text-xs text-slate-400 font-semibold">航行距離 · Distance</span>
-          <div class="flex items-baseline gap-1 mt-0.5">
-            <span id="statDistance" class="text-2xl sm:text-3xl font-black text-sky-400 tabular-nums">0</span>
-            <span class="text-xs text-slate-400 font-bold">m</span>
-          </div>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between">
-          <span class="text-xs text-slate-400 font-semibold">閃避礁石 · Rocks Dodged</span>
-          <div class="flex items-baseline gap-1 mt-0.5">
-            <span id="statRocks" class="text-2xl sm:text-3xl font-black text-emerald-400 tabular-nums">0</span>
-            <span class="text-xs text-slate-400 font-bold">顆</span>
-          </div>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between">
-          <span class="text-xs text-slate-400 font-semibold">船身傾角 · Boat Tilt</span>
-          <div class="flex items-baseline gap-1 mt-0.5">
-            <span id="statTilt" class="text-xl sm:text-2xl font-black text-amber-300 tabular-nums">0° (中立)</span>
-          </div>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between">
-          <span class="text-xs text-slate-400 font-semibold">運動時間 · Rehab Time</span>
-          <div class="flex items-baseline gap-1 mt-0.5">
-            <span id="statTime" class="text-2xl sm:text-3xl font-black text-purple-300 tabular-nums">00:00</span>
-          </div>
+    <!-- Compact KPI Strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3">
+        <span class="text-xs text-slate-400 font-semibold">航行距離 · Distance</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="statDistance" class="text-2xl sm:text-3xl font-black text-sky-400 tabular-nums">0</span>
+          <span class="text-xs text-slate-400 font-bold">m</span>
         </div>
       </div>
 
-      <!-- River Game Viewport Wrapper -->
-      <div id="riverViewportWrapper" class="relative w-full rounded-3xl overflow-hidden border-2 border-slate-700/80 shadow-2xl bg-sky-950 transition-all duration-200" style="height: 540px;">
-        <!-- Main Vertical River Arcade Canvas -->
-        <canvas id="riverCanvas" class="w-full h-full block"></canvas>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3">
+        <span class="text-xs text-slate-400 font-semibold">閃避礁石 · Rocks</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="statRocks" class="text-2xl sm:text-3xl font-black text-emerald-400 tabular-nums">0</span>
+          <span class="text-xs text-slate-400 font-bold">顆</span>
+        </div>
+      </div>
 
-        <!-- Floating Top HUD Bar (Visible in Fullscreen iPhone Portrait Mode) -->
-        <div id="portraitTopHud" class="hidden absolute top-2.5 inset-x-2.5 z-30 bg-slate-950/90 border border-slate-700/90 rounded-2xl px-3 py-2 items-center justify-between gap-2 backdrop-blur-md shadow-xl">
-          <div class="flex items-center gap-3">
-            <div>
-              <div class="text-[10px] text-slate-400 font-bold">距離 · Dist</div>
-              <div class="text-base font-black text-sky-400 tabular-nums"><span id="fsStatDistance">0</span>m</div>
-            </div>
-            <div>
-              <div class="text-[10px] text-slate-400 font-bold">閃避 · Rocks</div>
-              <div class="text-base font-black text-emerald-400 tabular-nums" id="fsStatRocks">0</div>
-            </div>
-            <div>
-              <div class="text-[10px] text-slate-400 font-bold">傾角 · Tilt</div>
-              <div class="text-sm font-black text-amber-300 tabular-nums" id="fsStatTilt">0°</div>
-            </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3">
+        <span class="text-xs text-slate-400 font-semibold">船身方向 · Tilt</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="statTilt" class="text-xl sm:text-2xl font-black text-amber-300 tabular-nums">0° 直行</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3">
+        <span class="text-xs text-slate-400 font-semibold">復健時間 · Time</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="statTime" class="text-2xl sm:text-3xl font-black text-purple-300 tabular-nums">00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- River Game Viewport Wrapper -->
+    <div id="riverViewportWrapper" class="relative w-full rounded-3xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-sky-950" style="height: 520px;">
+      <!-- Main Vertical River Arcade Canvas -->
+      <canvas id="riverCanvas" class="w-full h-full block"></canvas>
+
+      <!-- Floating Top HUD Bar (Visible in Fullscreen Portrait Mode) -->
+      <div id="portraitTopHud" class="hidden absolute top-2.5 inset-x-2.5 z-30 bg-slate-950/92 border border-slate-700 rounded-2xl px-3 py-2 items-center justify-between gap-2 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold">距離</div>
+            <div class="text-base font-black text-sky-400 tabular-nums"><span id="fsStatDistance">0</span>m</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold">閃避</div>
+            <div class="text-base font-black text-emerald-400 tabular-nums" id="fsStatRocks">0</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold">傾角</div>
+            <div class="text-sm font-black text-amber-300 tabular-nums" id="fsStatTilt">0°</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btnFsCamera" type="button" class="px-2.5 py-1.5 rounded-xl bg-sky-500 text-slate-950 font-black text-xs">
+            📷 鏡頭
+          </button>
+          <button id="btnExitPortrait" type="button" class="px-2.5 py-1.5 rounded-xl bg-rose-500 text-white font-black text-xs">
+            ✖ 退出
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Bilingual Encouragement Toast Banner (Solid semi-transparent, zero blur) -->
+      <div id="cueBanner" class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-lg">
+        <div class="bg-slate-950/90 border-2 border-emerald-400/80 rounded-2xl px-4 py-2 shadow-xl text-center">
+          <p id="cueTextZh" class="text-base sm:text-lg font-black text-emerald-300">
+            🙌 保持手肘彎曲 90°，抬高手臂控制帆船！
+          </p>
+          <p id="cueTextEn" class="text-xs sm:text-sm font-semibold text-slate-200 mt-0.5">
+            Keep elbows bent at 90° &amp; fists up! Raise Right arm to steer Left.
+          </p>
+        </div>
+      </div>
+
+      <!-- Picture-in-Picture Hardware Video + Dot-and-Line Skeleton Overlay -->
+      <div id="pipContainer" class="absolute bottom-3 right-3 z-20 w-44 sm:w-56 bg-slate-950 border-2 border-sky-400/80 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="bg-slate-900 px-2.5 py-1 flex items-center justify-between border-b border-slate-800">
+          <div class="flex items-center gap-1.5">
+            <span id="pipStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+            <span class="text-[11px] font-bold text-slate-200">骨架監測</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <button id="btnFsCamera" type="button" class="px-2.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs shadow transition">
-              📷 鏡頭
-            </button>
-            <button id="btnExitPortrait" type="button" class="px-2.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-black text-xs shadow transition">
-              ✖ 退出直立
-            </button>
+            <span id="fpsBadge" class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">60 FPS</span>
+            <span id="pipAngleBadge" class="text-[11px] font-mono font-bold text-sky-300">90°</span>
           </div>
         </div>
-
-        <!-- Floating Bottom Quick-Test Touch Bar (Visible in Fullscreen iPhone Portrait Mode for table distance or quick test) -->
-        <div id="portraitBottomBar" class="hidden absolute bottom-2.5 inset-x-2.5 z-30 bg-slate-950/90 border border-slate-700/90 rounded-2xl px-3 py-2 items-center justify-between gap-1.5 backdrop-blur-md shadow-xl">
-          <button type="button" data-preset="raiseRight" class="preset-btn flex-1 py-2 rounded-xl bg-sky-500/25 hover:bg-sky-500/40 border border-sky-400/40 text-sky-200 font-black text-xs">
-            🙋‍♂️ 抬右臂 (左轉)
-          </button>
-          <button type="button" data-preset="neutral" class="preset-btn px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-xs">
-            ⚖️ 平舉
-          </button>
-          <button type="button" data-preset="raiseLeft" class="preset-btn flex-1 py-2 rounded-xl bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/40 text-emerald-200 font-black text-xs">
-            🙋‍♀️ 抬左臂 (右轉)
-          </button>
-        </div>
-
-        <!-- Top Bilingual Encouragement Toast Banner -->
-        <div id="cueBanner" class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-lg transition-all duration-300">
-          <div id="cueCard" class="bg-slate-950/90 border-2 border-emerald-400/80 rounded-2xl px-4 py-2.5 shadow-xl backdrop-blur-md text-center">
-            <p id="cueTextZh" class="text-base sm:text-lg font-black text-emerald-300 tracking-wide">
-              🙌 保持手肘彎曲 90°，抬高手臂控制帆船！
-            </p>
-            <p id="cueTextEn" class="text-xs sm:text-sm font-semibold text-slate-200 mt-0.5">
-              Keep elbows bent at 90° &amp; fists up! Raise Right arm to steer Left (seesaw).
-            </p>
-          </div>
-        </div>
-
-        <!-- Picture-in-Picture (PiP) Dot-and-Line Skeleton Overlay (Top-Right / Draggable look) -->
-        <div id="pipContainer" class="absolute bottom-3 right-3 z-20 w-44 sm:w-56 bg-slate-950/90 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
-          <div class="bg-slate-900/95 px-2.5 py-1 flex items-center justify-between border-b border-slate-800">
-            <div class="flex items-center gap-1.5">
-              <span id="pipStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
-              <span id="pipModeLabel" class="text-[11px] font-bold text-slate-200">骨架監測 · 點線構想圖</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span id="fpsBadge" class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">60 FPS</span>
-              <span id="pipAngleBadge" class="text-[11px] font-mono font-bold text-sky-300">L:90° R:90°</span>
-            </div>
-          </div>
-          <div class="relative w-full aspect-[4/3] bg-slate-950 overflow-hidden">
-            <!-- Hardware-composited video layer for iOS Safari / iPhone 15 (never display:none) -->
-            <video id="webcamVideo" class="absolute inset-0 w-full h-full object-cover -scale-x-100 opacity-0 pointer-events-none transition-opacity duration-200" autoplay playsinline webkit-playsinline muted></video>
-            <!-- Transparent PiP Canvas drawing only dots and lines over hardware video -->
-            <canvas id="pipCanvas" width="256" height="192" class="relative z-10 w-full h-full block"></canvas>
-          </div>
-        </div>
-
-        <!-- AUTO-PAUSE FULL OVERLAY WHEN 90° ELBOW POSTURE IS LOST -->
-        <div id="posturePauseOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex-col items-center justify-center p-4 text-center">
-          <div class="pause-banner-pulse max-w-md w-full bg-slate-900 border-4 border-amber-400 rounded-3xl p-5 sm:p-6 shadow-2xl">
-            <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-4xl mb-3">
-              💪
-            </div>
-            <span class="inline-block px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 font-black text-xs uppercase tracking-wider mb-2">
-              航行暫停 · River Auto-Paused
-            </span>
-            <h2 id="pauseReasonZh" class="text-xl sm:text-2xl font-black text-white leading-snug">
-              請將雙手手肘彎曲至 90° 並握拳向上！
-            </h2>
-            <p id="pauseReasonEn" class="text-sm sm:text-base text-amber-200 font-semibold mt-1.5">
-              Please bend both elbows to ~90° (65°–115°) with fists pointing upward to resume sailing.
-            </p>
-
-            <!-- Live Elbow Angle Diagnostic Bar inside Pause Modal -->
-            <div class="mt-4 grid grid-cols-2 gap-2.5 bg-slate-950/90 p-3 rounded-2xl border border-slate-800 text-left">
-              <div>
-                <div class="text-xs text-slate-400">左手肘角度 · Left Elbow</div>
-                <div id="pauseLeftAngle" class="text-lg font-black text-rose-400">145° (需 65°–115°)</div>
-              </div>
-              <div>
-                <div class="text-xs text-slate-400">右手肘角度 · Right Elbow</div>
-                <div id="pauseRightAngle" class="text-lg font-black text-emerald-400">90° (合格 OK)</div>
-              </div>
-            </div>
-
-            <!-- Quick One-Tap Fix for Simulator Testing -->
-            <button id="btnQuickFixPosture" type="button" class="mt-4 w-full py-3 px-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm sm:text-base shadow-lg transition">
-              ✨ 一鍵恢復 90° 標準姿勢（模擬器輔助）/ Snap Elbows to 90°
-            </button>
-          </div>
+        <div class="relative w-full aspect-[4/3] bg-slate-950 overflow-hidden">
+          <video id="webcamVideo" class="absolute inset-0 w-full h-full object-cover -scale-x-100 opacity-0 pointer-events-none" autoplay playsinline webkit-playsinline muted></video>
+          <canvas id="pipCanvas" width="240" height="180" class="relative z-10 w-full h-full block"></canvas>
         </div>
       </div>
 
-      <!-- Quick Legend / Seesaw Physics Visual Reminder -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30">翹翹板原理 · Seesaw</span>
-          <span class="text-slate-300">抬高<strong>右臂</strong> ➔ 船向左傾 / 向左閃避</span>
+      <!-- Floating Bottom Left/Right Touch Bar (Visible in Fullscreen Portrait Mode) -->
+      <div id="portraitBottomBar" class="hidden absolute bottom-2.5 inset-x-2.5 z-30 bg-slate-950/92 border border-slate-700 rounded-2xl px-2.5 py-2 items-center justify-between gap-2 shadow-xl">
+        <button type="button" data-steer="left" class="steer-btn flex-1 py-2.5 rounded-xl bg-sky-500/25 border border-sky-400/60 text-sky-200 font-black text-sm">
+          ⬅️ 向左
+        </button>
+        <button type="button" data-steer="center" class="steer-btn px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-600 text-slate-200 font-bold text-sm">
+          ⬆️ 直行
+        </button>
+        <button type="button" data-steer="right" class="steer-btn flex-1 py-2.5 rounded-xl bg-emerald-500/25 border border-emerald-400/60 text-emerald-200 font-black text-sm">
+          向右 ➡️
+        </button>
+      </div>
+
+      <!-- AUTO-PAUSE OVERLAY WHEN 90° ELBOW POSTURE IS LOST -->
+      <div id="posturePauseOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/88 flex-col items-center justify-center p-4 text-center">
+        <div class="max-w-md w-full bg-slate-900 border-4 border-amber-400 rounded-3xl p-5 shadow-2xl">
+          <div class="text-4xl mb-2">💪</div>
+          <span class="inline-block px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 font-black text-xs uppercase mb-2">
+            航行暫停 · River Auto-Paused
+          </span>
+          <h3 id="pauseReasonZh" class="text-xl sm:text-2xl font-black text-white">
+            請將雙手手肘彎曲至 90° 並握拳向上！
+          </h3>
+          <p id="pauseReasonEn" class="text-sm text-amber-200 font-semibold mt-1">
+            Bend both elbows to ~90° (65°–115°) with fists up to resume.
+          </p>
+          <div class="mt-4 grid grid-cols-2 gap-2.5 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-left">
+            <div>
+              <div class="text-xs text-slate-400">左手肘 · Left</div>
+              <div id="pauseLeftAngle" class="text-lg font-black text-rose-400">--°</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">右手肘 · Right</div>
+              <div id="pauseRightAngle" class="text-lg font-black text-emerald-400">--°</div>
+            </div>
+          </div>
+          <button id="btnResumeManual" type="button" class="mt-4 w-full py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm">
+            恢復繼續航行 / Resume
+          </button>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-slate-300">抬高<strong>左臂</strong> ➔ 船向右傾 / 向右閃避</span>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SIMPLIFIED BOTTOM CONTROL BAR: ONLY LEFT / RIGHT & STREAM SPEED       -->
+    <!-- ===================================================================== -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+      <!-- 1. Simple Left / Center / Right Steering Control -->
+      <div class="md:col-span-7 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-black text-white">方向控制 · 簡易向左 / 向右</span>
+          <span id="inputSourceBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30">
+            🕹️ 按鍵模式（可隨時開啟鏡頭）
+          </span>
+        </div>
+        <div class="grid grid-cols-3 gap-2.5">
+          <button type="button" data-steer="left" class="steer-btn py-3.5 px-3 rounded-2xl bg-sky-500/20 hover:bg-sky-500/35 active:scale-95 border-2 border-sky-400/50 text-sky-200 font-black text-base sm:text-lg transition">
+            ⬅️ 向左
+          </button>
+          <button type="button" data-steer="center" class="steer-btn py-3.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 border-2 border-slate-600 text-slate-100 font-black text-base sm:text-lg transition">
+            ⬆️ 直行
+          </button>
+          <button type="button" data-steer="right" class="steer-btn py-3.5 px-3 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/35 active:scale-95 border-2 border-emerald-400/50 text-emerald-200 font-black text-base sm:text-lg transition">
+            向右 ➡️
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Simple Stream Speed Control -->
+      <div class="md:col-span-5 bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <label for="sliderRiverSpeed" class="text-sm font-black text-emerald-300">🌊 水流速度調節 · Speed</label>
+          <span id="valRiverSpeed" class="text-sm font-mono font-black text-white bg-emerald-500/20 px-2.5 py-0.5 rounded-lg border border-emerald-500/30">2.5x</span>
+        </div>
+        <input id="sliderRiverSpeed" type="range" min="1.0" max="5.0" step="0.5" value="2.5" class="rehab-slider" />
+        <div class="flex justify-between text-xs text-slate-400 font-semibold">
+          <span>慢 (輕鬆)</span>
+          <span>中 (適中)</span>
+          <span>快 (挑戰)</span>
         </div>
       </div>
     </section>
 
-    <!-- RIGHT COLUMN: Manual Arm-Angle Simulator & Therapist Rehab Settings (5 cols on lg) -->
-    <aside class="lg:col-span-5 flex flex-col gap-3.5 w-full">
-
-      <!-- Card 1: Interactive Upper-Limb Posture Simulator (Works without camera or alongside camera) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl">
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-sky-400">免鏡頭測試控制器 · Pose Simulator</span>
-            <h2 class="text-lg font-black text-white">上肢姿勢與角度模擬滑桿</h2>
-          </div>
-          <span id="inputSourceBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-400/30">
-            🕹️ 滑桿模擬中 / Simulator
-          </span>
-        </div>
-
-        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-          未開啟手機鏡頭時，可直接拖動下方滑桿模擬長者抬高手臂與手肘彎曲角度，即時測試<strong>翹翹板控船</strong>及<strong>90° 姿勢自動暫停保護</strong>。
-        </p>
-
-        <!-- Preset Quick-Test Buttons -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-4">
-          <button type="button" data-preset="neutral" class="preset-btn px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition">
-            ⚖️ 雙臂平舉 (直行)
-          </button>
-          <button type="button" data-preset="raiseRight" class="preset-btn px-2.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/30 transition">
-            🙋‍♂️ 抬高右臂 (左轉)
-          </button>
-          <button type="button" data-preset="raiseLeft" class="preset-btn px-2.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-bold text-emerald-300 border border-emerald-500/30 transition">
-            🙋‍♀️ 抬高左臂 (右轉)
-          </button>
-          <button type="button" data-preset="dropElbows" class="preset-btn px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/30 transition">
-            ⚠️ 手肘伸直 (觸發暫停)
-          </button>
-        </div>
-
-        <!-- Sliders Container -->
-        <div class="space-y-4">
-          <!-- Right Arm Raise Slider (Steers Left in Seesaw Mode) -->
-          <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/90">
-            <div class="flex justify-between items-center mb-1.5">
-              <label for="sliderRightRaise" class="text-sm font-bold text-sky-300 flex items-center gap-1.5">
-                <span>⬆️ 右肩抬高角度 · Right Arm Raise</span>
-              </label>
-              <span id="valRightRaise" class="text-sm font-mono font-black text-white bg-sky-500/20 px-2 py-0.5 rounded-lg border border-sky-500/30">90°</span>
-            </div>
-            <input id="sliderRightRaise" type="range" min="45" max="155" value="90" class="rehab-slider" />
-            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>45° (放下)</span>
-              <span class="text-sky-300 font-semibold">抬高右臂 ➔ 船向左傾 (Steer Left)</span>
-              <span>155° (高舉)</span>
-            </div>
-          </div>
-
-          <!-- Left Arm Raise Slider (Steers Right in Seesaw Mode) -->
-          <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/90">
-            <div class="flex justify-between items-center mb-1.5">
-              <label for="sliderLeftRaise" class="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
-                <span>⬆️ 左肩抬高角度 · Left Arm Raise</span>
-              </label>
-              <span id="valLeftRaise" class="text-sm font-mono font-black text-white bg-emerald-500/20 px-2 py-0.5 rounded-lg border border-emerald-500/30">90°</span>
-            </div>
-            <input id="sliderLeftRaise" type="range" min="45" max="155" value="90" class="rehab-slider emerald-thumb" />
-            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>45° (放下)</span>
-              <span class="text-emerald-300 font-semibold">抬高左臂 ➔ 船向右傾 (Steer Right)</span>
-              <span>155° (高舉)</span>
-            </div>
-          </div>
-
-          <!-- Elbow Bend Angle Slider (65° - 115° Gate) -->
-          <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/90">
-            <div class="flex justify-between items-center mb-1.5">
-              <label for="sliderElbowAngle" class="text-sm font-bold text-amber-300 flex items-center gap-1.5">
-                <span>💪 雙手肘彎曲角度 · Elbow Bend Angle</span>
-              </label>
-              <span id="valElbowAngle" class="text-sm font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-lg border border-emerald-500/30">90° (合格)</span>
-            </div>
-            <input id="sliderElbowAngle" type="range" min="30" max="170" value="90" class="rehab-slider amber-thumb" />
-            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>30° (過度彎曲)</span>
-              <span class="text-amber-300 font-semibold">安全範圍：65°–115° (超出自動暫停)</span>
-              <span>170° (手肘伸直)</span>
-            </div>
-          </div>
-
-          <!-- Fist Pointing Upward Toggle + Rehab Sensitivity -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-            <div class="bg-slate-950/70 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
-              <div>
-                <div class="text-xs font-bold text-slate-200">拳頭朝上 · Fists Up</div>
-                <div class="text-[11px] text-slate-400">手腕高於手肘</div>
-              </div>
-              <button id="btnToggleFistsUp" type="button" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-500 text-slate-950 transition">
-                ✅ 朝上 (Up)
-              </button>
-            </div>
-
-            <div class="bg-slate-950/70 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
-              <div>
-                <div class="text-xs font-bold text-slate-200">轉向模式 · Steering</div>
-                <div id="steeringModeSub" class="text-[11px] text-sky-300">翹翹板 (右高➔左轉)</div>
-              </div>
-              <button id="btnToggleSteeringMode" type="button" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition">
-                切換
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: Therapist & Elderly Difficulty / Sensitivity Tuning -->
-      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl">
-        <h3 class="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-          <span>⚕️</span>
-          <span>復健參數微調 · Rehab &amp; River Settings</span>
-        </h3>
-
-        <div class="space-y-3">
-          <div class="flex items-center justify-between gap-4">
-            <label for="sliderSensitivity" class="text-xs sm:text-sm text-slate-300 font-semibold whitespace-nowrap">
-              肩關節靈敏度 · Tilt Sensitivity
-            </label>
-            <input id="sliderSensitivity" type="range" min="0.5" max="2.0" step="0.1" value="1.2" class="rehab-slider max-w-[160px]" />
-            <span id="valSensitivity" class="text-xs font-mono font-bold text-sky-300 w-10 text-right">1.2x</span>
-          </div>
-
-          <div class="flex items-center justify-between gap-4">
-            <label for="sliderRiverSpeed" class="text-xs sm:text-sm text-slate-300 font-semibold whitespace-nowrap">
-              河道水流速度 · Stream Speed
-            </label>
-            <input id="sliderRiverSpeed" type="range" min="1.5" max="5.5" step="0.5" value="2.5" class="rehab-slider max-w-[160px]" />
-            <span id="valRiverSpeed" class="text-xs font-mono font-bold text-emerald-300 w-10 text-right">2.5x</span>
-          </div>
-        </div>
-
-        <!-- Keyboard & Touch Hint -->
-        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
-          <span>⌨️ 鍵盤快捷鍵：<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">←</kbd> / <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">→</kbd> 調整手臂高低</span>
-          <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200">Space</kbd> 切換手肘 90° 狀態</span>
-        </div>
-      </div>
-
-    </aside>
   </main>
 
-  <script>
-    // =========================================================================
-    // 1. PORTED ANGLE & POSTURE GEOMETRY FROM 徐德煜6.5.ipynb
-    // =========================================================================
-    function calculateAngle(a, b, c) {
-      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-      let angle = Math.abs((radians * 180.0) / Math.PI);
-      if (angle > 180.0) {
-        angle = 360.0 - angle;
-      }
-      return Math.round(angle);
-    }
+  <script type="module">
+    import {
+      FilesetResolver,
+      PoseLandmarker
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
     // =========================================================================
-    // 2. APPLICATION & REHAB GAME STATE
+    // 1. AUTOMATIC OS (iOS / Android / Desktop) & DEVICE DETECTION
+    // =========================================================================
+    function detectDeviceOS() {
+      const ua = navigator.userAgent || '';
+      const isIPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIOS = /iPhone|iPad|iPod/i.test(ua) || isIPadOS;
+      const isAndroid = /Android/i.test(ua);
+      const isInApp = /MicroMessenger|Line\/|FBAN|FBAV|Instagram|WhatsApp/i.test(ua);
+
+      let os = 'desktop';
+      let osLabel = '電腦瀏覽器 (Desktop)';
+      let osIcon = '💻';
+      let defaultDevice = 'desktop';
+
+      if (isIOS) {
+        os = 'ios';
+        const isIpad = /iPad/i.test(ua) || isIPadOS;
+        osLabel = isIpad ? 'iOS / iPadOS（Safari GPU 極速模式）' : 'iOS / iPhone（Safari GPU 極速模式）';
+        osIcon = '🍎';
+        defaultDevice = isIpad ? 'tablet' : 'phone';
+      } else if (isAndroid) {
+        os = 'android';
+        const isTablet = !/Mobile/i.test(ua);
+        osLabel = isTablet ? 'Android 平板（WebGL GPU 加速）' : 'Android 手機（WebGL GPU 加速）';
+        osIcon = '🤖';
+        defaultDevice = isTablet ? 'tablet' : 'phone';
+      }
+
+      return { os, osLabel, osIcon, defaultDevice, isInApp };
+    }
+
+    const deviceInfo = detectDeviceOS();
+
+    // =========================================================================
+    // 2. APPLICATION STATE
     // =========================================================================
     const state = {
-      // Input mode: 'simulator' or 'camera'
-      inputMode: 'simulator',
+      os: deviceInfo.os,
+      selectedDevice: deviceInfo.defaultDevice, // 'phone' | 'tablet' | 'desktop'
+      portraitTableMode: false,
+
       cameraActive: false,
       facingMode: 'user',
       audioEnabled: true,
-      seesawMode: true, // true: Raise Right Arm higher -> Tilt/Steer Left
 
       // Upper-limb biometric metrics (degrees)
-      leftArmRaiseDeg: 90,   // Shoulder abduction: 90 = horizontal level, >90 = raised higher
-      rightArmRaiseDeg: 90,  // Shoulder abduction: 90 = horizontal level, >90 = raised higher
-      leftElbowDeg: 90,      // Target: 65° - 115° (90° ideal)
-      rightElbowDeg: 90,     // Target: 65° - 115° (90° ideal)
-      fistsPointingUp: true, // Wrist Y above Elbow Y
+      leftArmRaiseDeg: 90,
+      rightArmRaiseDeg: 90,
+      leftElbowDeg: 90,
+      rightElbowDeg: 90,
+      fistsPointingUp: true,
 
-      // Derived posture gate
+      // Posture gate
       postureValid: true,
       pauseReasonZh: '',
       pauseReasonEn: '',
 
-      // Boat & River Physics (Sega Vertical Arcade Style)
-      boatX: 0.5,            // Normalized [0.16 .. 0.84] across river width
-      boatTiltDeg: 0,        // Proportional to (leftArmRaise - rightArmRaise) in seesaw mode
+      // Boat & River Physics (Seesaw mode: Raise Right -> Tilt/Steer Left)
+      boatX: 0.5,
+      boatTiltDeg: 0,
       targetTiltDeg: 0,
       baseSpeed: 2.5,
       currentSpeed: 2.5,
       slowdownTimer: 0,
       bounceVx: 0,
-      sensitivity: 1.2,
 
-      // Telemetry counters
+      // Telemetry
       distanceMeters: 0,
       rocksDodged: 0,
-      bumpCount: 0,
       activeSeconds: 0,
       lastSecondTick: performance.now(),
 
-      // Entities on vertical river stream
-      scrollOffset: 0,
+      // River entities
       rocks: [],
       ripples: [],
       splashes: [],
       trees: [],
-      floatingRings: [],
 
-      // Landmarks for PiP dot-and-line drawing (normalized 0..1)
       landmarks: null,
       lastVoiceTime: 0
     };
 
+    // Device-tuned performance profiles
+    const DEVICE_PROFILES = {
+      phone: {
+        label: '手機',
+        camWidth: 320,
+        camHeight: 240,
+        poseIntervalMs: 66, // ~15 FPS GPU inference, 60 FPS canvas
+        autoPortrait: true
+      },
+      tablet: {
+        label: '平板',
+        camWidth: 480,
+        camHeight: 360,
+        poseIntervalMs: 55, // ~18 FPS GPU inference
+        autoPortrait: false
+      },
+      desktop: {
+        label: '電腦',
+        camWidth: 640,
+        camHeight: 480,
+        poseIntervalMs: 50, // ~20 FPS GPU inference
+        autoPortrait: false
+      }
+    };
+
     // =========================================================================
-    // 3. WEB AUDIO SYNTHESIZER & BILINGUAL VOICE ENCOURAGEMENT
+    // 3. ANGLE CALCULATION (Ported from 徐德煜6.5.ipynb)
+    // =========================================================================
+    function calculateAngle(a, b, c) {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs((radians * 180.0) / Math.PI);
+      if (angle > 180.0) angle = 360.0 - angle;
+      return Math.round(angle);
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO & BILINGUAL VOICE CUES
     // =========================================================================
     let audioCtx = null;
 
     function ensureAudioContext() {
       if (!audioCtx) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioContextClass) {
-          audioCtx = new AudioContextClass();
-        }
+        if (AudioContextClass) audioCtx = new AudioContextClass();
       }
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
@@ -540,78 +518,61 @@
         const now = audioCtx.currentTime;
 
         if (type === 'splash') {
-          // Gentle water bump + low thud
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(190, now);
-          osc.frequency.exponentialRampToValueAtTime(65, now + 0.28);
-          gain.gain.setValueAtTime(0.22, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.31);
+          osc.frequency.setValueAtTime(185, now);
+          osc.frequency.exponentialRampToValueAtTime(65, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.28);
         } else if (type === 'dodge') {
-          // Pleasant upward chime when passing a rock
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, now); // C5
-          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.08);
           gain.gain.setValueAtTime(0.14, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.26);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.24);
         } else if (type === 'milestone') {
-          // Cheerful 3-note arpeggio
           [523.25, 659.25, 783.99].forEach((freq, idx) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, now + idx * 0.09);
-            gain.gain.setValueAtTime(0.16, now + idx * 0.09);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.28);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + idx * 0.09);
-            osc.stop(now + idx * 0.09 + 0.3);
+            gain.gain.setValueAtTime(0.15, now + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.25);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.09); osc.stop(now + idx * 0.09 + 0.26);
           });
         } else if (type === 'pauseWarn') {
-          // Gentle two-tone posture reminder
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'sine';
           osc.frequency.setValueAtTime(440, now);
           osc.frequency.setValueAtTime(349.23, now + 0.14);
           gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.34);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.32);
         }
-      } catch (e) {
-        // Ignore audio context errors on restricted autoplay
-      }
+      } catch (e) {}
     }
 
     function speakEncouragement(textZh, textEn, force = false) {
-      // Update visual banner first
-      const cueTextZh = document.getElementById('cueTextZh');
-      const cueTextEn = document.getElementById('cueTextEn');
-      if (cueTextZh && cueTextEn) {
-        cueTextZh.textContent = textZh;
-        cueTextEn.textContent = textEn;
+      const zhEl = document.getElementById('cueTextZh');
+      const enEl = document.getElementById('cueTextEn');
+      if (zhEl && enEl) {
+        zhEl.textContent = textZh;
+        enEl.textContent = textEn;
       }
-
       if (!state.audioEnabled) return;
       const now = performance.now();
       if (!force && now - state.lastVoiceTime < 6500) return;
       state.lastVoiceTime = now;
-
       try {
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
@@ -620,59 +581,42 @@
           utter.rate = 0.95;
           window.speechSynthesis.speak(utter);
         }
-      } catch (e) {
-        // Fallback silently if speechSynthesis is blocked
-      }
+      } catch (e) {}
     }
 
     // =========================================================================
-    // 4. UPPER-LIMB POSTURE EVALUATION & SEESAW TILT MAPPING
+    // 5. POSTURE GATE & SEESAW TILT EVALUATION
     // =========================================================================
     function evaluatePostureAndTilt() {
-      // 1. Check 90-degree elbow bend requirement (65° to 115° tolerance for elderly joints)
       const leftElbowOk = state.leftElbowDeg >= 65 && state.leftElbowDeg <= 115;
       const rightElbowOk = state.rightElbowDeg >= 65 && state.rightElbowDeg <= 115;
       const fistsOk = state.fistsPointingUp;
 
       const wasValid = state.postureValid;
-      state.postureValid = leftElbowOk && rightElbowOk && fistsOk;
+      state.postureValid = !state.cameraActive || (leftElbowOk && rightElbowOk && fistsOk);
 
       if (!state.postureValid) {
         if (!fistsOk) {
           state.pauseReasonZh = '請將雙拳向上舉起（手腕高於手肘）！';
-          state.pauseReasonEn = 'Please point both fists upward (wrists higher than elbows) to sail.';
-        } else if (!leftElbowOk && !rightElbowOk) {
-          state.pauseReasonZh = `請將雙手手肘彎曲至 90°（目前左 ${state.leftElbowDeg}° / 右 ${state.rightElbowDeg}°）`;
-          state.pauseReasonEn = 'Bend both elbows into the 65°–115° target zone to resume sailing.';
-        } else if (!leftElbowOk) {
-          state.pauseReasonZh = `請調整左手肘至 90°（目前 ${state.leftElbowDeg}°）`;
-          state.pauseReasonEn = `Adjust your Left Elbow (${state.leftElbowDeg}°) back to 65°–115°.`;
+          state.pauseReasonEn = 'Point both fists upward (wrists above elbows) to resume.';
         } else {
-          state.pauseReasonZh = `請調整右手肘至 90°（目前 ${state.rightElbowDeg}°）`;
-          state.pauseReasonEn = `Adjust your Right Elbow (${state.rightElbowDeg}°) back to 65°–115°.`;
+          state.pauseReasonZh = `請將手肘彎曲至 90°（左 ${state.leftElbowDeg}° / 右 ${state.rightElbowDeg}°）`;
+          state.pauseReasonEn = 'Bend both elbows into 65°–115° to resume sailing.';
         }
-
         if (wasValid) {
           playSoundEffect('pauseWarn');
-          speakEncouragement('請將手肘彎曲九十度，握拳向上', 'Please bend your elbows to 90 degrees with fists up.', true);
+          speakEncouragement('請將手肘彎曲九十度，握拳向上', 'Bend elbows to 90 degrees with fists up.', true);
         }
       } else if (!wasValid && state.postureValid) {
         playSoundEffect('dodge');
-        speakEncouragement('姿勢標準！繼續航行！', 'Great 90-degree posture! Sailing resumed!', true);
+        speakEncouragement('姿勢標準！繼續航行！', 'Great posture! Sailing resumed!', true);
       }
 
-      // 2. Calculate arm height differential & proportional boat tilt
-      // In Seesaw Mode (User selection #1):
-      // Raise Right Arm higher (rightArmRaiseDeg > leftArmRaiseDeg) -> Tilt/Steer Left (negative tilt angle)
-      // Raise Left Arm higher (leftArmRaiseDeg > rightArmRaiseDeg) -> Tilt/Steer Right (positive tilt angle)
+      // Seesaw Physics: Raise Right Arm higher -> Tilt/Steer Left (negative angle)
       const armDiff = state.rightArmRaiseDeg - state.leftArmRaiseDeg;
-      const rawTilt = state.seesawMode
-        ? -armDiff * state.sensitivity
-        : armDiff * state.sensitivity;
+      state.targetTiltDeg = Math.max(-42, Math.min(42, -armDiff * 1.25));
 
-      state.targetTiltDeg = Math.max(-42, Math.min(42, rawTilt));
-
-      // Update Pause Overlay DOM only when posture is invalid or state just flipped
+      // Update Pause Overlay only when invalid or state flipped
       const overlay = document.getElementById('posturePauseOverlay');
       if (overlay && (!state.postureValid || wasValid !== state.postureValid)) {
         if (!state.postureValid) {
@@ -680,12 +624,11 @@
           overlay.classList.add('flex');
           document.getElementById('pauseReasonZh').textContent = state.pauseReasonZh;
           document.getElementById('pauseReasonEn').textContent = state.pauseReasonEn;
-
           const lEl = document.getElementById('pauseLeftAngle');
           const rEl = document.getElementById('pauseRightAngle');
-          lEl.textContent = `${state.leftElbowDeg}° ${leftElbowOk ? '(合格 OK)' : '(需 65°–115°)'}`;
+          lEl.textContent = `${state.leftElbowDeg}° ${leftElbowOk ? '(OK)' : '(需 65°–115°)'}`;
           lEl.className = `text-lg font-black ${leftElbowOk ? 'text-emerald-400' : 'text-rose-400'}`;
-          rEl.textContent = `${state.rightElbowDeg}° ${rightElbowOk ? '(合格 OK)' : '(需 65°–115°)'}`;
+          rEl.textContent = `${state.rightElbowDeg}° ${rightElbowOk ? '(OK)' : '(需 65°–115°)'}`;
           rEl.className = `text-lg font-black ${rightElbowOk ? 'text-emerald-400' : 'text-rose-400'}`;
         } else {
           overlay.classList.add('hidden');
@@ -693,156 +636,106 @@
         }
       }
 
-      // Update PiP header status badge
       const pipDot = document.getElementById('pipStatusDot');
       const pipBadge = document.getElementById('pipAngleBadge');
       if (pipDot && pipBadge) {
         if (wasValid !== state.postureValid) {
-          pipDot.className = `w-2.5 h-2.5 rounded-full inline-block ${state.postureValid ? 'bg-emerald-400' : 'bg-amber-400 animate-ping'}`;
+          pipDot.className = `w-2.5 h-2.5 rounded-full inline-block ${state.postureValid ? 'bg-emerald-400' : 'bg-amber-400'}`;
         }
         pipBadge.textContent = `L:${state.leftElbowDeg}° R:${state.rightElbowDeg}°`;
       }
     }
 
-    // Build synthetic landmarks when in Simulator mode so PiP dot-and-line view is always live
-    function computeSimulatedLandmarks() {
-      // In mirrored selfie view:
-      // Left side of screen (x ~ 0.34) is the user's Right Arm
-      // Right side of screen (x ~ 0.66) is the user's Left Arm
-      const rShoulder = { x: 0.36, y: 0.48 };
-      const lShoulder = { x: 0.64, y: 0.48 };
-
-      const upperArmLen = 0.18;
-      const forearmLen = 0.17;
-
-      // Convert raise angle (90° = horizontal outward, >90° = raised higher upward)
-      const rRad = ((state.rightArmRaiseDeg - 90) * Math.PI) / 180;
-      const lRad = ((state.leftArmRaiseDeg - 90) * Math.PI) / 180;
-
-      const rElbow = {
-        x: rShoulder.x - Math.cos(rRad) * upperArmLen,
-        y: rShoulder.y - Math.sin(rRad) * upperArmLen
-      };
-      const lElbow = {
-        x: lShoulder.x + Math.cos(lRad) * upperArmLen,
-        y: lShoulder.y - Math.sin(lRad) * upperArmLen
-      };
-
-      // Elbow bend angle: 90° means perpendicular to upper arm pointing upward
-      const bendOffsetRad = ((90 - state.rightElbowDeg) * Math.PI) / 180;
-      const lBendOffsetRad = ((90 - state.leftElbowDeg) * Math.PI) / 180;
-      const upSign = state.fistsPointingUp ? -1 : 1;
-
-      const rWristAngle = rRad + Math.PI / 2 + bendOffsetRad;
-      const lWristAngle = lRad + Math.PI / 2 + lBendOffsetRad;
-
-      const rWrist = {
-        x: rElbow.x - Math.cos(rWristAngle) * forearmLen * 0.6,
-        y: rElbow.y + upSign * Math.abs(Math.sin(rWristAngle)) * forearmLen
-      };
-      const lWrist = {
-        x: lElbow.x + Math.cos(lWristAngle) * forearmLen * 0.6,
-        y: lElbow.y + upSign * Math.abs(Math.sin(lWristAngle)) * forearmLen
-      };
-
-      return {
-        nose: { x: 0.5, y: 0.28 },
-        rShoulder,
-        lShoulder,
-        rElbow,
-        lElbow,
-        rWrist,
-        lWrist,
-        rHip: { x: 0.41, y: 0.84 },
-        lHip: { x: 0.59, y: 0.84 }
-      };
-    }
-
     // =========================================================================
-    // 5. IPHONE 15 / IOS SAFARI OPTIMIZED MEDIAPIPE CAMERA PIPELINE
+    // 6. MODERN @mediapipe/tasks-vision GPU POSE LANDMARKER (iOS / Android Fast)
     // =========================================================================
-    let poseInstance = null;
+    let poseLandmarker = null;
     let cameraStream = null;
-    let isPoseBusy = false;
     let lastPoseInferTime = 0;
-    let lastVideoTimestamp = -1;
-    let lastSliderDomSyncTime = 0;
-    const POSE_INTERVAL_MS = 66; // ~15 FPS inference cap; boat tilt interpolates at 60 FPS
+    let lastVideoTime = -1;
+    let activeDelegate = 'GPU';
 
-    // Tiny 256x192 offscreen buffer so iOS Safari never transfers full HD video textures into WASM
-    const poseInputCanvas = document.createElement('canvas');
-    poseInputCanvas.width = 256;
-    poseInputCanvas.height = 192;
-    const poseInputCtx = poseInputCanvas.getContext('2d', { willReadFrequently: false });
-
-    async function initMediaPipePose() {
-      if (poseInstance) return poseInstance;
-      if (typeof window.Pose === 'undefined') {
-        throw new Error('MediaPipe Pose script not yet loaded');
+    async function initPoseLandmarker() {
+      if (poseLandmarker) return poseLandmarker;
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      );
+      const modelUrl = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+      try {
+        activeDelegate = 'GPU';
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: modelUrl, delegate: "GPU" },
+          runningMode: "VIDEO",
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
+          minPosePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+      } catch (gpuErr) {
+        activeDelegate = 'CPU';
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: modelUrl, delegate: "CPU" },
+          runningMode: "VIDEO",
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
+          minPosePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
       }
-      poseInstance = new window.Pose({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
-      });
-      // modelComplexity: 0 (Lite model) + enableSegmentation: false -> ~3x faster on iPhone 15 WebKit
-      poseInstance.setOptions({
-        modelComplexity: 0,
-        smoothLandmarks: true,
-        enableSegmentation: false,
-        smoothSegmentation: false,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-      poseInstance.onResults(onPoseResults);
-      return poseInstance;
+      return poseLandmarker;
     }
 
-    function onPoseResults(results) {
-      if (!state.cameraActive) return;
-      if (!results.poseLandmarks || results.poseLandmarks.length < 25) return;
+    function tickPoseInference(now) {
+      if (!state.cameraActive || !poseLandmarker) return;
+      const profile = DEVICE_PROFILES[state.selectedDevice] || DEVICE_PROFILES.phone;
+      if (now - lastPoseInferTime < profile.poseIntervalMs) return;
 
-      const lm = results.poseLandmarks;
-      // MediaPipe indices (matches 徐德煜6.5.ipynb lines 65-74):
-      // 11: R_shoulder, 13: R_elbow, 15: R_wrist
-      // 12: L_shoulder, 14: L_elbow, 16: L_wrist
-      // 23: R_hip, 24: L_hip
-      const mirrorX = state.facingMode === 'user';
-      const mx = (x) => (mirrorX ? 1 - x : x);
+      const videoEl = document.getElementById('webcamVideo');
+      if (!videoEl || videoEl.readyState < 2 || videoEl.videoWidth === 0) return;
+      if (videoEl.currentTime === lastVideoTime) return;
 
-      const rShoulder = { x: mx(lm[11].x), y: lm[11].y };
-      const rElbow    = { x: mx(lm[13].x), y: lm[13].y };
-      const rWrist    = { x: mx(lm[15].x), y: lm[15].y };
-      const lShoulder = { x: mx(lm[12].x), y: lm[12].y };
-      const lElbow    = { x: mx(lm[14].x), y: lm[14].y };
-      const lWrist    = { x: mx(lm[16].x), y: lm[16].y };
-      const rHip      = { x: mx(lm[23].x), y: lm[23].y };
-      const lHip      = { x: mx(lm[24].x), y: lm[24].y };
+      lastVideoTime = videoEl.currentTime;
+      lastPoseInferTime = now;
 
-      state.landmarks = {
-        nose: { x: mx(lm[0].x), y: lm[0].y },
-        rShoulder, lShoulder, rElbow, lElbow, rWrist, lWrist, rHip, lHip
-      };
+      try {
+        // GPU reads <video> directly — zero extra canvas copy!
+        const result = poseLandmarker.detectForVideo(videoEl, now);
+        if (!result.landmarks || result.landmarks.length === 0) return;
+        const lm = result.landmarks[0];
+        if (lm.length < 25) return;
 
-      // Exponential smoothing on joint angles to prevent jitter at 15 FPS Lite inference
-      const rawRElbow = calculateAngle(rShoulder, rElbow, rWrist);
-      const rawLElbow = calculateAngle(lShoulder, lElbow, lWrist);
-      const rawRRaise = calculateAngle(rHip, rShoulder, rElbow);
-      const rawLRaise = calculateAngle(lHip, lShoulder, lElbow);
+        const mirrorX = state.facingMode === 'user';
+        const mx = (x) => (mirrorX ? 1 - x : x);
 
-      state.rightElbowDeg = Math.round(state.rightElbowDeg * 0.35 + rawRElbow * 0.65);
-      state.leftElbowDeg  = Math.round(state.leftElbowDeg * 0.35 + rawLElbow * 0.65);
-      state.rightArmRaiseDeg = Math.round(state.rightArmRaiseDeg * 0.35 + rawRRaise * 0.65);
-      state.leftArmRaiseDeg  = Math.round(state.leftArmRaiseDeg * 0.35 + rawLRaise * 0.65);
+        const rShoulder = { x: mx(lm[11].x), y: lm[11].y };
+        const rElbow    = { x: mx(lm[13].x), y: lm[13].y };
+        const rWrist    = { x: mx(lm[15].x), y: lm[15].y };
+        const lShoulder = { x: mx(lm[12].x), y: lm[12].y };
+        const lElbow    = { x: mx(lm[14].x), y: lm[14].y };
+        const lWrist    = { x: mx(lm[16].x), y: lm[16].y };
+        const rHip      = { x: mx(lm[23].x), y: lm[23].y };
+        const lHip      = { x: mx(lm[24].x), y: lm[24].y };
 
-      // Check that both fists/wrists are above or level with elbows (pointing upward)
-      state.fistsPointingUp = (rWrist.y < rElbow.y + 0.05) && (lWrist.y < lElbow.y + 0.05);
+        state.landmarks = {
+          nose: { x: mx(lm[0].x), y: lm[0].y },
+          rShoulder, lShoulder, rElbow, lElbow, rWrist, lWrist, rHip, lHip
+        };
 
-      // Throttle DOM slider updates to ~5 Hz so DOM layout never blocks the 60 FPS canvas
-      const now = performance.now();
-      if (now - lastSliderDomSyncTime > 190) {
-        lastSliderDomSyncTime = now;
-        syncSlidersFromState();
+        const rawRElbow = calculateAngle(rShoulder, rElbow, rWrist);
+        const rawLElbow = calculateAngle(lShoulder, lElbow, lWrist);
+        const rawRRaise = calculateAngle(rHip, rShoulder, rElbow);
+        const rawLRaise = calculateAngle(lHip, lShoulder, lElbow);
+
+        state.rightElbowDeg = Math.round(state.rightElbowDeg * 0.35 + rawRElbow * 0.65);
+        state.leftElbowDeg  = Math.round(state.leftElbowDeg * 0.35 + rawLElbow * 0.65);
+        state.rightArmRaiseDeg = Math.round(state.rightArmRaiseDeg * 0.35 + rawRRaise * 0.65);
+        state.leftArmRaiseDeg  = Math.round(state.leftArmRaiseDeg * 0.35 + rawLRaise * 0.65);
+
+        state.fistsPointingUp = (rWrist.y < rElbow.y + 0.05) && (lWrist.y < lElbow.y + 0.05);
+        evaluatePostureAndTilt();
+      } catch (e) {
+        // Skip single bad frame silently
       }
-      evaluatePostureAndTilt();
     }
 
     async function startSmartphoneCamera() {
@@ -850,17 +743,18 @@
       const camBtnLabel = document.getElementById('camBtnLabel');
       const flipBtn = document.getElementById('btnFlipCamera');
       const sourceBadge = document.getElementById('inputSourceBadge');
+      const profile = DEVICE_PROFILES[state.selectedDevice] || DEVICE_PROFILES.phone;
 
       try {
-        camBtnLabel.textContent = '連接鏡頭中... / Connecting...';
+        camBtnLabel.textContent = '載入 GPU 模型...';
         if (cameraStream) {
           cameraStream.getTracks().forEach(t => t.stop());
         }
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: state.facingMode,
-            width: { ideal: 320 },
-            height: { ideal: 240 },
+            width: { ideal: profile.camWidth },
+            height: { ideal: profile.camHeight },
             frameRate: { ideal: 30, max: 30 }
           },
           audio: false
@@ -875,33 +769,27 @@
         }
         await videoEl.play();
 
-        await initMediaPipePose();
+        await initPoseLandmarker();
         state.cameraActive = true;
-        state.inputMode = 'camera';
-        isPoseBusy = false;
-
-        camBtnLabel.textContent = '關閉鏡頭 (改用滑桿) / Stop Cam';
+        camBtnLabel.textContent = '關閉鏡頭';
         flipBtn.classList.remove('hidden');
         flipBtn.classList.add('flex');
-        sourceBadge.textContent = '📷 iPhone 極速偵測 / 60FPS Mode';
-        sourceBadge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+        sourceBadge.textContent = `📷 鏡頭即時偵測 (${activeDelegate})`;
+        sourceBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
 
-        speakEncouragement('鏡頭已開啟！請彎曲手肘九十度並握拳向上', 'Camera started! Bend both elbows to 90 degrees with fists up.', true);
+        speakEncouragement('鏡頭已開啟！請彎曲手肘九十度並握拳向上', 'Camera ready! Bend elbows to 90 degrees with fists up.', true);
       } catch (err) {
         state.cameraActive = false;
-        state.inputMode = 'simulator';
         videoEl.classList.add('opacity-0');
         videoEl.classList.remove('opacity-90');
-        camBtnLabel.textContent = '開啟手機鏡頭 / Start Camera';
-        sourceBadge.textContent = '🕹️ 滑桿模擬中 (無鏡頭權限)';
-        speakEncouragement('目前使用滑桿模擬模式，請拖動右側滑桿控船', 'Camera unavailable in this preview frame. Use the simulator sliders on the right to steer!', true);
+        camBtnLabel.textContent = '開啟鏡頭';
+        sourceBadge.textContent = '🕹️ 按鍵模式（無鏡頭權限）';
+        speakEncouragement('未能開啟鏡頭，可使用下方向左向右按鈕操作', 'Camera unavailable. Use the simple Left and Right buttons below!', true);
       }
     }
 
     function stopSmartphoneCamera() {
       state.cameraActive = false;
-      state.inputMode = 'simulator';
-      isPoseBusy = false;
       const videoEl = document.getElementById('webcamVideo');
       if (videoEl) {
         videoEl.classList.add('opacity-0');
@@ -911,221 +799,125 @@
         cameraStream.getTracks().forEach(t => t.stop());
         cameraStream = null;
       }
-      document.getElementById('camBtnLabel').textContent = '開啟手機鏡頭 / Start Camera';
+      document.getElementById('camBtnLabel').textContent = '開啟鏡頭';
       document.getElementById('btnFlipCamera').classList.add('hidden');
       const sourceBadge = document.getElementById('inputSourceBadge');
-      sourceBadge.textContent = '🕹️ 滑桿模擬中 / Simulator';
-      sourceBadge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-400/30';
-    }
-
-    // Non-blocking 15 FPS pose tick triggered from main loop (never stacks promises)
-    function tickPoseInference(now) {
-      if (!state.cameraActive || isPoseBusy || !poseInstance) return;
-      if (now - lastPoseInferTime < POSE_INTERVAL_MS) return;
-
-      const videoEl = document.getElementById('webcamVideo');
-      if (!videoEl || videoEl.readyState < 2) return;
-      if (videoEl.currentTime === lastVideoTimestamp) return;
-
-      lastVideoTimestamp = videoEl.currentTime;
-      lastPoseInferTime = now;
-      isPoseBusy = true;
-
-      // Downscale video frame into tiny 256x192 buffer before sending to MediaPipe WASM
-      poseInputCtx.drawImage(videoEl, 0, 0, 256, 192);
-      poseInstance.send({ image: poseInputCanvas })
-        .then(() => { isPoseBusy = false; })
-        .catch(() => { isPoseBusy = false; });
+      sourceBadge.textContent = '🕹️ 按鍵模式（可隨時開啟鏡頭）';
+      sourceBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30';
+      state.postureValid = true;
+      evaluatePostureAndTilt();
     }
 
     // =========================================================================
-    // 6. PIP DOT-AND-LINE SKELETON RENDERER (Zero Video Texture Redraw on iOS)
+    // 7. PIP DOT-AND-LINE SKELETON RENDERER
     // =========================================================================
+    function computeSimulatedLandmarks() {
+      const rShoulder = { x: 0.36, y: 0.48 };
+      const lShoulder = { x: 0.64, y: 0.48 };
+      const rRad = ((state.rightArmRaiseDeg - 90) * Math.PI) / 180;
+      const lRad = ((state.leftArmRaiseDeg - 90) * Math.PI) / 180;
+
+      const rElbow = { x: rShoulder.x - Math.cos(rRad) * 0.18, y: rShoulder.y - Math.sin(rRad) * 0.18 };
+      const lElbow = { x: lShoulder.x + Math.cos(lRad) * 0.18, y: lShoulder.y - Math.sin(lRad) * 0.18 };
+      const rWrist = { x: rElbow.x, y: rElbow.y - 0.17 };
+      const lWrist = { x: lElbow.x, y: lElbow.y - 0.17 };
+
+      return {
+        nose: { x: 0.5, y: 0.28 },
+        rShoulder, lShoulder, rElbow, lElbow, rWrist, lWrist,
+        rHip: { x: 0.41, y: 0.84 },
+        lHip: { x: 0.59, y: 0.84 }
+      };
+    }
+
     function renderPipSkeleton() {
       const canvas = document.getElementById('pipCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width;
       const H = canvas.height;
-
       ctx.clearRect(0, 0, W, H);
 
-      // When camera is active, the hardware <video> sits directly underneath this transparent canvas!
       if (state.cameraActive) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
         ctx.fillRect(0, 0, W, H);
       } else {
         ctx.fillStyle = '#091326';
         ctx.fillRect(0, 0, W, H);
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
-        ctx.lineWidth = 1;
-        for (let x = 32; x < W; x += 32) {
-          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-        }
-        for (let y = 32; y < H; y += 32) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-        }
       }
 
       const lm = state.cameraActive && state.landmarks ? state.landmarks : computeSimulatedLandmarks();
       const pt = (p) => ({ x: p.x * W, y: p.y * H });
 
       const nose = pt(lm.nose);
-      const rSh  = pt(lm.rShoulder);
-      const lSh  = pt(lm.lShoulder);
-      const rEl  = pt(lm.rElbow);
-      const lEl  = pt(lm.lElbow);
-      const rWr  = pt(lm.rWrist);
-      const lWr  = pt(lm.lWrist);
-      const rHip = pt(lm.rHip);
-      const lHip = pt(lm.lHip);
+      const rSh = pt(lm.rShoulder), lSh = pt(lm.lShoulder);
+      const rEl = pt(lm.rElbow), lEl = pt(lm.lElbow);
+      const rWr = pt(lm.rWrist), lWr = pt(lm.lWrist);
+      const rHip = pt(lm.rHip), lHip = pt(lm.lHip);
 
-      // 1. Semi-transparent green vertical reference bars at elbows (directly from 徐德煜6.5.ipynb lines 99-103)
-      ctx.save();
+      // Green vertical reference bars at elbows
       ctx.strokeStyle = 'rgba(52, 211, 153, 0.45)';
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 7;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(rEl.x, rEl.y);
-      ctx.lineTo(rEl.x, rEl.y - 48);
-      ctx.moveTo(lEl.x, lEl.y);
-      ctx.lineTo(lEl.x, lEl.y - 48);
+      ctx.moveTo(rEl.x, rEl.y); ctx.lineTo(rEl.x, rEl.y - 42);
+      ctx.moveTo(lEl.x, lEl.y); ctx.lineTo(lEl.x, lEl.y - 42);
       ctx.stroke();
-      ctx.restore();
 
-      // 2. Torso & Shoulder reference lines
+      // Torso lines
       ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(rSh.x, rSh.y); ctx.lineTo(lSh.x, lSh.y);
       ctx.moveTo(rSh.x, rSh.y); ctx.lineTo(rHip.x, rHip.y);
       ctx.moveTo(lSh.x, lSh.y); ctx.lineTo(lHip.x, lHip.y);
-      ctx.moveTo(rHip.x, rHip.y); ctx.lineTo(lHip.x, lHip.y);
       ctx.stroke();
 
-      // 3. Upper arms & Red Forearm segments (from notebook lines 96-97)
+      // Upper arms & forearms
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(rSh.x, rSh.y); ctx.lineTo(rEl.x, rEl.y);
       ctx.moveTo(lSh.x, lSh.y); ctx.lineTo(lEl.x, lEl.y);
       ctx.stroke();
 
       ctx.strokeStyle = state.postureValid ? '#f43f5e' : '#fbbf24';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.moveTo(rEl.x, rEl.y); ctx.lineTo(rWr.x, rWr.y);
       ctx.moveTo(lEl.x, lEl.y); ctx.lineTo(lWr.x, lWr.y);
       ctx.stroke();
 
-      // 4. Head circle
+      // Head
       ctx.strokeStyle = '#e2e8f0';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(nose.x, nose.y, 16, 0, Math.PI * 2);
+      ctx.arc(nose.x, nose.y, 13, 0, Math.PI * 2);
       ctx.stroke();
 
-      // 5. Landmark Dots
-      [rSh, lSh, rEl, lEl, rHip, lHip].forEach(p => {
+      // Joint dots
+      [rSh, lSh, rEl, lEl].forEach(p => {
         ctx.fillStyle = '#0284c7';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
       });
 
-      // Fist dots (highlighted green when pointing up)
       [rWr, lWr].forEach(p => {
         ctx.fillStyle = state.fistsPointingUp ? '#34d399' : '#f43f5e';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      });
-
-      // 6. Angle numbers next to elbows (like cv2.putText in notebook lines 81-84)
-      ctx.font = 'bold 12px Inter, sans-serif';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`右肘 ${state.rightElbowDeg}°`, Math.max(6, rEl.x - 28), rEl.y + 18);
-      ctx.fillText(`左肘 ${state.leftElbowDeg}°`, Math.min(W - 64, lEl.x - 16), lEl.y + 18);
-
-      // Label Left/Right orientation at bottom of PiP
-      ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText('右臂 (Right)', 10, H - 8);
-      ctx.fillText('左臂 (Left)', W - 72, H - 8);
-    }
-
-    // =========================================================================
-    // 7. SEGA-STYLE VERTICAL RIVER ARCADE ENGINE (Canvas 2D)
-    // =========================================================================
-    function initRiverScene() {
-      state.rocks = [
-        { x: 0.34, y: 0.18, r: 26, passed: false, vertices: makeRockPolygon(26) },
-        { x: 0.67, y: 0.46, r: 30, passed: false, vertices: makeRockPolygon(30) }
-      ];
-      state.trees = [];
-      for (let i = 0; i < 8; i++) {
-        state.trees.push({
-          side: i % 2 === 0 ? 'left' : 'right',
-          y: (i / 8) * 1.0,
-          size: 18 + (i % 3) * 6
-        });
-      }
-      state.ripples = [];
-      for (let i = 0; i < 14; i++) {
-        state.ripples.push({
-          x: 0.2 + Math.random() * 0.6,
-          y: Math.random(),
-          len: 20 + Math.random() * 25
-        });
-      }
-    }
-
-    function makeRockPolygon(radius) {
-      const pts = [];
-      const count = 7;
-      for (let i = 0; i < count; i++) {
-        const ang = (i / count) * Math.PI * 2;
-        const rad = radius * (0.78 + ((i * 37) % 28) / 100);
-        pts.push({ x: Math.cos(ang) * rad, y: Math.sin(ang) * rad });
-      }
-      return pts;
-    }
-
-    function spawnRock() {
-      // Ensure rocks leave a navigable channel for elderly players
-      const lanes = [0.27, 0.42, 0.52, 0.63, 0.74];
-      const chosenLane = lanes[Math.floor(Math.random() * lanes.length)];
-      const radius = 24 + Math.floor(Math.random() * 12);
-      state.rocks.push({
-        x: chosenLane,
-        y: -0.08,
-        r: radius,
-        passed: false,
-        vertices: makeRockPolygon(radius)
+        ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
       });
     }
 
-    function createSplashParticles(px, py, color = '#e0f2fe') {
-      for (let i = 0; i < 14; i++) {
-        const angle = (Math.PI * 2 * i) / 14;
-        const spd = 1.5 + Math.random() * 3.5;
-        state.splashes.push({
-          x: px,
-          y: py,
-          vx: Math.cos(angle) * spd,
-          vy: Math.sin(angle) * spd,
-          life: 1.0,
-          color
-        });
-      }
-    }
-
+    // =========================================================================
+    // 8. SEGA-STYLE VERTICAL RIVER ARCADE ENGINE (60 FPS Cached Canvas)
+    // =========================================================================
     let cachedRiverCanvas = null;
     let cachedRiverCtx = null;
     let cachedWaterGrad = null;
@@ -1148,6 +940,52 @@
       cachedWaterGrad.addColorStop(1, '#064e3b');
     }
 
+    function makeRockPolygon(radius) {
+      const pts = [];
+      for (let i = 0; i < 7; i++) {
+        const ang = (i / 7) * Math.PI * 2;
+        const rad = radius * (0.78 + ((i * 37) % 28) / 100);
+        pts.push({ x: Math.cos(ang) * rad, y: Math.sin(ang) * rad });
+      }
+      return pts;
+    }
+
+    function initRiverScene() {
+      state.rocks = [
+        { x: 0.34, y: 0.18, r: 26, passed: false, vertices: makeRockPolygon(26) },
+        { x: 0.67, y: 0.46, r: 28, passed: false, vertices: makeRockPolygon(28) }
+      ];
+      state.trees = [];
+      for (let i = 0; i < 8; i++) {
+        state.trees.push({ side: i % 2 === 0 ? 'left' : 'right', y: i / 8, size: 18 + (i % 3) * 6 });
+      }
+      state.ripples = [];
+      for (let i = 0; i < 12; i++) {
+        state.ripples.push({ x: 0.2 + Math.random() * 0.6, y: Math.random(), len: 20 + Math.random() * 24 });
+      }
+    }
+
+    function spawnRock() {
+      const lanes = [0.27, 0.42, 0.52, 0.63, 0.74];
+      const chosenLane = lanes[Math.floor(Math.random() * lanes.length)];
+      const radius = 24 + Math.floor(Math.random() * 10);
+      state.rocks.push({
+        x: chosenLane,
+        y: -0.08,
+        r: radius,
+        passed: false,
+        vertices: makeRockPolygon(radius)
+      });
+    }
+
+    function createSplashParticles(px, py) {
+      for (let i = 0; i < 10; i++) {
+        const angle = (Math.PI * 2 * i) / 10;
+        const spd = 1.5 + Math.random() * 3;
+        state.splashes.push({ x: px, y: py, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, life: 1.0 });
+      }
+    }
+
     function updateAndRenderRiver() {
       if (!cachedRiverCanvas || !cachedRiverCtx) {
         resizeRiverCanvas();
@@ -1157,18 +995,14 @@
       const W = cachedRiverCanvas.width;
       const H = cachedRiverCanvas.height;
 
-      // Smooth boat tilt interpolation
       state.boatTiltDeg += (state.targetTiltDeg - state.boatTiltDeg) * 0.14;
 
-      // Only advance river stream & boat steering when 90° posture gate is satisfied
       if (state.postureValid) {
         const now = performance.now();
         if (now - state.lastSecondTick >= 1000) {
           state.activeSeconds += 1;
           state.lastSecondTick = now;
         }
-
-        // Recover from gentle rock slowdown
         if (state.slowdownTimer > 0) {
           state.slowdownTimer -= 1;
           state.currentSpeed = state.baseSpeed * 0.48;
@@ -1177,222 +1011,137 @@
         }
 
         const speedNorm = state.currentSpeed * 0.0022;
-        state.scrollOffset = (state.scrollOffset + speedNorm) % 1.0;
         state.distanceMeters += state.currentSpeed * 0.04;
 
-        // Horizontal velocity proportional to boat tilt angle + any gentle bounce
         const tiltRad = (state.boatTiltDeg * Math.PI) / 180;
-        const steerVx = Math.sin(tiltRad) * 0.0095;
-        state.boatX += steerVx + state.bounceVx;
+        state.boatX += Math.sin(tiltRad) * 0.0095 + state.bounceVx;
         state.bounceVx *= 0.85;
 
-        // Keep boat safely inside grassy river banks [0.18 .. 0.82]
-        if (state.boatX < 0.19) {
-          state.boatX = 0.19;
-          state.bounceVx = 0.003;
-        } else if (state.boatX > 0.81) {
-          state.boatX = 0.81;
-          state.bounceVx = -0.003;
-        }
+        if (state.boatX < 0.19) { state.boatX = 0.19; state.bounceVx = 0.003; }
+        else if (state.boatX > 0.81) { state.boatX = 0.81; state.bounceVx = -0.003; }
 
-        // Move ripples downward
         state.ripples.forEach(rp => {
           rp.y += speedNorm * 1.4;
-          if (rp.y > 1.05) {
-            rp.y = -0.05;
-            rp.x = 0.2 + Math.random() * 0.6;
-          }
+          if (rp.y > 1.05) { rp.y = -0.05; rp.x = 0.2 + Math.random() * 0.6; }
         });
-
-        // Move shoreline trees downward
         state.trees.forEach(tr => {
           tr.y += speedNorm;
           if (tr.y > 1.08) tr.y = -0.08;
         });
 
-        // Move rocks downward & check collision / dodge
         const boatPx = state.boatX * W;
         const boatPy = H * 0.76;
-        const boatHitRadius = 22;
 
         for (let i = state.rocks.length - 1; i >= 0; i--) {
           const rk = state.rocks[i];
           rk.y += speedNorm;
           const rkPx = rk.x * W;
           const rkPy = rk.y * H;
-
-          // Check collision with boat
           const dx = boatPx - rkPx;
           const dy = boatPy - rkPy;
-          const dist = Math.hypot(dx, dy);
 
-          if (dist < rk.r + boatHitRadius) {
-            // Stress-free rehab bounce: push boat gently away, splash sound, brief slowdown
+          if (Math.hypot(dx, dy) < rk.r + 22) {
             const pushDir = dx >= 0 ? 1 : -1;
             state.bounceVx = pushDir * 0.014;
-            state.slowdownTimer = 32;
-            state.bumpCount += 1;
-            createSplashParticles(boatPx, boatPy - 10, '#38bdf8');
+            state.slowdownTimer = 30;
+            createSplashParticles(boatPx, boatPy - 10);
             playSoundEffect('splash');
-            speakEncouragement(
-              '小心礁石！輕輕抬高手臂轉向閃避',
-              'Gentle bump! Raise one arm higher to tilt and steer around rocks.'
-            );
-            // Move rock slightly aside so it doesn't re-collide immediately
+            speakEncouragement('小心礁石！輕輕抬高手臂轉向閃避', 'Gentle bump! Raise one arm higher to steer around rocks.');
             rk.x = Math.max(0.2, Math.min(0.8, rk.x - pushDir * 0.08));
           }
 
-          // Count rock as dodged once it scrolls past the boat's stern
           if (!rk.passed && rk.y > 0.82) {
             rk.passed = true;
             state.rocksDodged += 1;
             playSoundEffect(state.rocksDodged % 5 === 0 ? 'milestone' : 'dodge');
             if (state.rocksDodged % 5 === 0) {
-              speakEncouragement(
-                `太棒了！已成功閃避 ${state.rocksDodged} 顆礁石，肩膀控制得很好！`,
-                `Wonderful! ${state.rocksDodged} rocks dodged! Great shoulder mobility!`,
-                true
-              );
+              speakEncouragement(`太棒了！已閃避 ${state.rocksDodged} 顆礁石！`, `Great job! ${state.rocksDodged} rocks dodged!`, true);
             }
           }
-
-          if (rk.y > 1.12) {
-            state.rocks.splice(i, 1);
-          }
+          if (rk.y > 1.12) state.rocks.splice(i, 1);
         }
 
-        // Maintain rock stream spacing
         const highestRockY = state.rocks.reduce((minY, r) => Math.min(minY, r.y), 1.0);
-        if (state.rocks.length < 4 && highestRockY > 0.28) {
-          spawnRock();
-        }
+        if (state.rocks.length < 4 && highestRockY > 0.28) spawnRock();
       } else {
         state.lastSecondTick = performance.now();
       }
 
-      // =======================================================================
-      // DRAW SEGA-STYLE VERTICAL RIVER SCENE
-      // =======================================================================
-      // 1. Deep river water gradient (cached on resize for 60 FPS performance)
+      // Draw water, banks, ripples, trees, rocks, boat
       ctx.fillStyle = cachedWaterGrad || '#0369a1';
       ctx.fillRect(0, 0, W, H);
 
-      // 2. Left & Right River Banks (Shoreline grass & sandy beach edge)
       const leftBankW = W * 0.13;
       const rightBankX = W * 0.87;
-
       ctx.fillStyle = '#065f46';
       ctx.fillRect(0, 0, leftBankW, H);
       ctx.fillRect(rightBankX, 0, W - rightBankX, H);
-
       ctx.fillStyle = '#fde68a';
       ctx.fillRect(leftBankW - 6, 0, 8, H);
       ctx.fillRect(rightBankX - 2, 0, 8, H);
 
-      // 3. Scrolling Vertical Stream Lanes & Water Ripples
       ctx.strokeStyle = 'rgba(186, 230, 253, 0.28)';
       ctx.lineWidth = 2;
       state.ripples.forEach(rp => {
-        const rx = rp.x * W;
-        const ry = rp.y * H;
         ctx.beginPath();
-        ctx.moveTo(rx, ry);
-        ctx.lineTo(rx, ry + rp.len);
+        ctx.moveTo(rp.x * W, rp.y * H);
+        ctx.lineTo(rp.x * W, rp.y * H + rp.len);
         ctx.stroke();
       });
 
-      // 4. Shoreline Trees (Scrolling downward for Sega arcade speed sensation)
       state.trees.forEach(tr => {
         const tx = tr.side === 'left' ? leftBankW * 0.5 : rightBankX + (W - rightBankX) * 0.5;
         const ty = tr.y * H;
         ctx.fillStyle = '#047857';
-        ctx.beginPath();
-        ctx.arc(tx, ty, tr.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(tx, ty, tr.size, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#10b981';
-        ctx.beginPath();
-        ctx.arc(tx - 4, ty - 4, tr.size * 0.65, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(tx - 4, ty - 4, tr.size * 0.65, 0, Math.PI * 2); ctx.fill();
       });
 
-      // 5. River Rocks with Foam Wake & Dot-and-Line Wireframe Highlight
       state.rocks.forEach(rk => {
-        const rx = rk.x * W;
-        const ry = rk.y * H;
-
-        // White water foam ring around rock
+        const rx = rk.x * W, ry = rk.y * H;
         ctx.strokeStyle = 'rgba(224, 242, 254, 0.65)';
         ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(rx, ry + 4, rk.r + 5, 0, Math.PI * 1.1);
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(rx, ry + 4, rk.r + 5, 0, Math.PI * 1.1); ctx.stroke();
 
-        // Rock body polygon
         ctx.save();
         ctx.translate(rx, ry);
         ctx.fillStyle = '#475569';
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        rk.vertices.forEach((v, idx) => {
-          if (idx === 0) ctx.moveTo(v.x, v.y);
-          else ctx.lineTo(v.x, v.y);
-        });
+        rk.vertices.forEach((v, idx) => idx === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y));
         ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Inner facet lines & center dot (matching dot-and-line aesthetic)
-        ctx.fillStyle = '#94a3b8';
-        ctx.beginPath();
-        ctx.arc(-rk.r * 0.2, -rk.r * 0.2, rk.r * 0.35, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fill(); ctx.stroke();
         ctx.restore();
       });
 
-      // 6. Player Sailboat (Anchored at Y = 76% of screen, tilts proportionally to arm height)
+      // Player Boat
       const boatPx = state.boatX * W;
       const boatPy = H * 0.76;
-
-      // Wake trail behind boat
       if (state.postureValid) {
         ctx.strokeStyle = 'rgba(224, 242, 254, 0.55)';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(boatPx - 12, boatPy + 26);
-        ctx.lineTo(boatPx - 24, boatPy + 68);
-        ctx.moveTo(boatPx + 12, boatPy + 26);
-        ctx.lineTo(boatPx + 24, boatPy + 68);
+        ctx.moveTo(boatPx - 12, boatPy + 26); ctx.lineTo(boatPx - 24, boatPy + 68);
+        ctx.moveTo(boatPx + 12, boatPy + 26); ctx.lineTo(boatPx + 24, boatPy + 68);
         ctx.stroke();
       }
 
       ctx.save();
       ctx.translate(boatPx, boatPy);
       ctx.rotate((state.boatTiltDeg * Math.PI) / 180);
-
-      // Boat hull
       ctx.fillStyle = '#f59e0b';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(0, -36); // Bow (prow)
+      ctx.moveTo(0, -36);
       ctx.quadraticCurveTo(22, -8, 18, 28);
       ctx.lineTo(-18, 28);
       ctx.quadraticCurveTo(-22, -8, 0, -36);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
 
-      // Inner wooden deck stripes
-      ctx.fillStyle = '#d97706';
-      ctx.beginPath();
-      ctx.moveTo(0, -26);
-      ctx.lineTo(12, 20);
-      ctx.lineTo(-12, 20);
-      ctx.closePath();
-      ctx.fill();
-
-      // Billowing white-and-sky sail
       ctx.fillStyle = '#f8fafc';
       ctx.strokeStyle = '#0284c7';
       ctx.lineWidth = 2;
@@ -1400,48 +1149,33 @@
       ctx.moveTo(0, -24);
       ctx.quadraticCurveTo(26, -2, 0, 14);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Mast center dot & bow dot
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(0, -4, 4.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fill(); ctx.stroke();
       ctx.restore();
 
-      // 7. Render Splash Particles
       for (let i = state.splashes.length - 1; i >= 0; i--) {
         const sp = state.splashes[i];
-        sp.x += sp.vx;
-        sp.y += sp.vy;
-        sp.life -= 0.04;
-        if (sp.life <= 0) {
-          state.splashes.splice(i, 1);
-          continue;
-        }
-        ctx.fillStyle = sp.color;
+        sp.x += sp.vx; sp.y += sp.vy; sp.life -= 0.045;
+        if (sp.life <= 0) { state.splashes.splice(i, 1); continue; }
+        ctx.fillStyle = '#38bdf8';
         ctx.globalAlpha = sp.life;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1.0;
       }
 
-      // 8. Draw Live Seesaw Balance Indicator Bar at Bottom-Left of River Canvas
-      drawSeesawHud(ctx, 18, H - 68);
-
-      // 9. Update Top KPI DOM Readouts (throttled to ~8 Hz to eliminate DOM reflows)
+      // Throttled DOM KPI Updates (~8 Hz)
       const hudNow = performance.now();
-      if (hudNow - lastHudDomUpdate > 120) {
+      if (hudNow - lastHudDomUpdate > 125) {
         lastHudDomUpdate = hudNow;
         const distFloor = Math.floor(state.distanceMeters);
-        document.getElementById('statDistance').textContent = distFloor;
-        document.getElementById('statRocks').textContent = state.rocksDodged;
-
         const tiltRound = Math.round(state.boatTiltDeg);
         const tiltDir = tiltRound < -3 ? '⬅️ 左傾' : (tiltRound > 3 ? '➡️ 右傾' : '⬆️ 直行');
+
+        document.getElementById('statDistance').textContent = distFloor;
+        document.getElementById('statRocks').textContent = state.rocksDodged;
         document.getElementById('statTilt').textContent = `${Math.abs(tiltRound)}° ${tiltDir}`;
+        const mins = String(Math.floor(state.activeSeconds / 60)).padStart(2, '0');
+        const secs = String(state.activeSeconds % 60).padStart(2, '0');
+        document.getElementById('statTime').textContent = `${mins}:${secs}`;
 
         const fsDist = document.getElementById('fsStatDistance');
         if (fsDist) {
@@ -1449,334 +1183,174 @@
           document.getElementById('fsStatRocks').textContent = state.rocksDodged;
           document.getElementById('fsStatTilt').textContent = `${Math.abs(tiltRound)}° ${tiltRound < -3 ? '⬅️' : (tiltRound > 3 ? '➡️' : '⬆️')}`;
         }
-
-        const mins = String(Math.floor(state.activeSeconds / 60)).padStart(2, '0');
-        const secs = String(state.activeSeconds % 60).padStart(2, '0');
-        document.getElementById('statTime').textContent = `${mins}:${secs}`;
       }
     }
 
-    function drawSeesawHud(ctx, x, y) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(x, y, 184, 54, 14);
-      ctx.fill();
-      ctx.stroke();
+    // =========================================================================
+    // 9. DEVICE SETUP MODAL & SIMPLIFIED UI CONTROLS
+    // =========================================================================
+    function setPortraitTableMode(active) {
+      state.portraitTableMode = active;
+      const topHud = document.getElementById('portraitTopHud');
+      const bottomBar = document.getElementById('portraitBottomBar');
+      const btnLabel = document.getElementById('portraitBtnLabel');
 
-      ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillText('翹翹板平衡儀 · Seesaw Tilt', x + 16, y + 16);
-
-      // Seesaw beam
-      const cx = x + 92;
-      const cy = y + 36;
-      const beamRad = (state.boatTiltDeg * 0.6 * Math.PI) / 180;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(beamRad);
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(-54, 0);
-      ctx.lineTo(54, 0);
-      ctx.stroke();
-
-      // Left & Right arm dots on beam
-      ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.arc(-54, 0, 5, 0, Math.PI * 2);
-      ctx.arc(54, 0, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // Fulcrum triangle
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + 2);
-      ctx.lineTo(cx - 7, cy + 12);
-      ctx.lineTo(cx + 7, cy + 12);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      if (active) {
+        document.body.classList.add('portrait-table-mode');
+        topHud.classList.remove('hidden'); topHud.classList.add('flex');
+        bottomBar.classList.remove('hidden'); bottomBar.classList.add('flex');
+        btnLabel.textContent = '退出直立';
+      } else {
+        document.body.classList.remove('portrait-table-mode');
+        topHud.classList.add('hidden'); topHud.classList.remove('flex');
+        bottomBar.classList.add('hidden'); bottomBar.classList.remove('flex');
+        btnLabel.textContent = '全螢幕直立';
+      }
+      setTimeout(() => resizeRiverCanvas(), 60);
     }
 
-    // =========================================================================
-    // 8. UI EVENT HANDLERS & SIMULATOR CONTROLS
-    // =========================================================================
-    function syncSlidersFromState() {
-      const sR = document.getElementById('sliderRightRaise');
-      const sL = document.getElementById('sliderLeftRaise');
-      const sE = document.getElementById('sliderElbowAngle');
+    function applySelectedDevice(deviceKey) {
+      state.selectedDevice = deviceKey;
+      document.querySelectorAll('.device-select-btn').forEach(btn => {
+        if (btn.getAttribute('data-device') === deviceKey) {
+          btn.classList.add('device-card-active');
+        } else {
+          btn.classList.remove('device-card-active');
+        }
+      });
 
-      if (sR) sR.value = state.rightArmRaiseDeg;
-      if (sL) sL.value = state.leftArmRaiseDeg;
-      if (sE) sE.value = state.rightElbowDeg;
+      const osShort = state.os === 'ios' ? 'iOS' : (state.os === 'android' ? 'Android' : '電腦');
+      const devLabel = DEVICE_PROFILES[deviceKey]?.label || '手機';
+      const icon = deviceKey === 'phone' ? '📱' : (deviceKey === 'tablet' ? '📲' : '💻');
+      document.getElementById('headerDeviceBadge').textContent = `${icon} ${osShort} · ${devLabel}`;
+    }
 
-      document.getElementById('valRightRaise').textContent = `${state.rightArmRaiseDeg}°`;
-      document.getElementById('valLeftRaise').textContent = `${state.leftArmRaiseDeg}°`;
-
-      const elbowOk = state.rightElbowDeg >= 65 && state.rightElbowDeg <= 115;
-      const valElbow = document.getElementById('valElbowAngle');
-      valElbow.textContent = `${state.rightElbowDeg}° ${elbowOk ? '(合格)' : '(暫停!)'}`;
-      valElbow.className = `text-sm font-mono font-black px-2 py-0.5 rounded-lg border ${
-        elbowOk
-          ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
-          : 'text-rose-300 bg-rose-500/20 border-rose-500/30'
-      }`;
+    function applySimpleSteer(dir) {
+      ensureAudioContext();
+      if (dir === 'left') {
+        // Seesaw: Raise Right Arm higher -> Steer Left
+        state.rightArmRaiseDeg = 122;
+        state.leftArmRaiseDeg = 82;
+      } else if (dir === 'right') {
+        // Seesaw: Raise Left Arm higher -> Steer Right
+        state.rightArmRaiseDeg = 82;
+        state.leftArmRaiseDeg = 122;
+      } else {
+        state.rightArmRaiseDeg = 90;
+        state.leftArmRaiseDeg = 90;
+      }
+      state.leftElbowDeg = 90;
+      state.rightElbowDeg = 90;
+      state.fistsPointingUp = true;
+      evaluatePostureAndTilt();
     }
 
     function bindUiControls() {
-      // Right Arm Raise Slider
-      document.getElementById('sliderRightRaise').addEventListener('input', (e) => {
-        ensureAudioContext();
-        state.rightArmRaiseDeg = Number(e.target.value);
-        syncSlidersFromState();
-        evaluatePostureAndTilt();
-      });
+      // Populate OS auto-detection UI
+      document.getElementById('osDetectIcon').textContent = deviceInfo.osIcon;
+      document.getElementById('osDetectTitle').textContent = deviceInfo.osLabel;
+      if (deviceInfo.isInApp) {
+        document.getElementById('inAppWarnBox').classList.remove('hidden');
+      }
+      applySelectedDevice(state.selectedDevice);
 
-      // Left Arm Raise Slider
-      document.getElementById('sliderLeftRaise').addEventListener('input', (e) => {
-        ensureAudioContext();
-        state.leftArmRaiseDeg = Number(e.target.value);
-        syncSlidersFromState();
-        evaluatePostureAndTilt();
-      });
-
-      // Elbow Bend Angle Slider
-      document.getElementById('sliderElbowAngle').addEventListener('input', (e) => {
-        ensureAudioContext();
-        const val = Number(e.target.value);
-        state.leftElbowDeg = val;
-        state.rightElbowDeg = val;
-        syncSlidersFromState();
-        evaluatePostureAndTilt();
-      });
-
-      // Quick Fix 90° Posture Button inside Auto-Pause Overlay
-      document.getElementById('btnQuickFixPosture').addEventListener('click', () => {
-        ensureAudioContext();
-        state.leftElbowDeg = 90;
-        state.rightElbowDeg = 90;
-        state.fistsPointingUp = true;
-        updateFistButtonUi();
-        syncSlidersFromState();
-        evaluatePostureAndTilt();
-      });
-
-      // Fists Pointing Up Toggle
-      document.getElementById('btnToggleFistsUp').addEventListener('click', () => {
-        ensureAudioContext();
-        state.fistsPointingUp = !state.fistsPointingUp;
-        updateFistButtonUi();
-        evaluatePostureAndTilt();
-      });
-
-      // Steering Mode Toggle (Default: Seesaw Mode per user selection)
-      document.getElementById('btnToggleSteeringMode').addEventListener('click', () => {
-        ensureAudioContext();
-        state.seesawMode = !state.seesawMode;
-        const sub = document.getElementById('steeringModeSub');
-        sub.textContent = state.seesawMode ? '翹翹板 (右高➔左轉)' : '同向直覺 (右高➔右轉)';
-        evaluatePostureAndTilt();
-      });
-
-      // Preset Scenario Buttons
-      document.querySelectorAll('.preset-btn').forEach(btn => {
+      // Device selection cards
+      document.querySelectorAll('.device-select-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          ensureAudioContext();
-          const preset = btn.getAttribute('data-preset');
-          if (preset === 'neutral') {
-            state.rightArmRaiseDeg = 90;
-            state.leftArmRaiseDeg = 90;
-            state.leftElbowDeg = 90;
-            state.rightElbowDeg = 90;
-            state.fistsPointingUp = true;
-          } else if (preset === 'raiseRight') {
-            // Raise Right Arm higher -> Tilt/Steer Left
-            state.rightArmRaiseDeg = 128;
-            state.leftArmRaiseDeg = 82;
-            state.leftElbowDeg = 90;
-            state.rightElbowDeg = 90;
-            state.fistsPointingUp = true;
-          } else if (preset === 'raiseLeft') {
-            // Raise Left Arm higher -> Tilt/Steer Right
-            state.rightArmRaiseDeg = 82;
-            state.leftArmRaiseDeg = 128;
-            state.leftElbowDeg = 90;
-            state.rightElbowDeg = 90;
-            state.fistsPointingUp = true;
-          } else if (preset === 'dropElbows') {
-            // Straighten elbows to 150° -> Triggers 90° Auto-Pause Prompt
-            state.leftElbowDeg = 150;
-            state.rightElbowDeg = 150;
-          }
-          updateFistButtonUi();
-          syncSlidersFromState();
-          evaluatePostureAndTilt();
+          applySelectedDevice(btn.getAttribute('data-device'));
         });
       });
 
-      // Sensitivity & River Speed Sliders
-      document.getElementById('sliderSensitivity').addEventListener('input', (e) => {
-        state.sensitivity = Number(e.target.value);
-        document.getElementById('valSensitivity').textContent = `${state.sensitivity.toFixed(1)}x`;
-        evaluatePostureAndTilt();
+      // Confirm device modal
+      document.getElementById('btnConfirmDevice').addEventListener('click', () => {
+        ensureAudioContext();
+        document.getElementById('deviceSetupModal').classList.add('hidden');
+        if (state.selectedDevice === 'phone' && (state.os === 'ios' || state.os === 'android')) {
+          setPortraitTableMode(true);
+        } else {
+          resizeRiverCanvas();
+        }
+        speakEncouragement('設定完成！可以點選開啟鏡頭，或直接按向左向右試玩', 'Setup complete! Tap Start Camera or use Left and Right to play.', true);
       });
 
+      // Reopen device selector from header
+      document.getElementById('btnReopenDeviceModal').addEventListener('click', () => {
+        document.getElementById('deviceSetupModal').classList.remove('hidden');
+      });
+
+      // Simple Left / Center / Right buttons (both main bar & fullscreen portrait bar)
+      document.querySelectorAll('.steer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applySimpleSteer(btn.getAttribute('data-steer'));
+        });
+      });
+
+      // Stream Speed slider
       document.getElementById('sliderRiverSpeed').addEventListener('input', (e) => {
         state.baseSpeed = Number(e.target.value);
         document.getElementById('valRiverSpeed').textContent = `${state.baseSpeed.toFixed(1)}x`;
       });
 
-      // One-Tap Fullscreen Portrait Mode (Optimized for placing iPhone vertically on a table)
-      function setPortraitTableMode(active) {
-        state.portraitTableMode = active;
-        const topHud = document.getElementById('portraitTopHud');
-        const bottomBar = document.getElementById('portraitBottomBar');
-        const btnLabel = document.getElementById('portraitBtnLabel');
-
-        if (active) {
-          document.body.classList.add('portrait-table-mode');
-          topHud.classList.remove('hidden');
-          topHud.classList.add('flex');
-          bottomBar.classList.remove('hidden');
-          bottomBar.classList.add('flex');
-          btnLabel.textContent = '退出直立模式 / Exit Table Mode';
-          try {
-            const docEl = document.documentElement;
-            if (docEl.requestFullscreen) {
-              docEl.requestFullscreen().catch(() => {});
-            } else if (docEl.webkitRequestFullscreen) {
-              docEl.webkitRequestFullscreen();
-            }
-          } catch (e) {}
-          speakEncouragement('已切換至手機直立桌面模式，請退後一步進行復健', 'iPhone Portrait Table Mode active! Step back and bend elbows to 90 degrees.', true);
-        } else {
-          document.body.classList.remove('portrait-table-mode');
-          topHud.classList.add('hidden');
-          topHud.classList.remove('flex');
-          bottomBar.classList.add('hidden');
-          bottomBar.classList.remove('flex');
-          btnLabel.textContent = '全螢幕直立模式 / iPhone Table Mode';
-          try {
-            if (document.fullscreenElement && document.exitFullscreen) {
-              document.exitFullscreen().catch(() => {});
-            } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            }
-          } catch (e) {}
-        }
-        setTimeout(() => resizeRiverCanvas(), 60);
-      }
-
+      // Portrait mode buttons
       document.getElementById('btnPortraitFullscreen').addEventListener('click', () => {
         ensureAudioContext();
         setPortraitTableMode(!state.portraitTableMode);
       });
-
       document.getElementById('btnExitPortrait').addEventListener('click', () => {
-        ensureAudioContext();
         setPortraitTableMode(false);
       });
 
-      document.getElementById('btnFsCamera').addEventListener('click', () => {
+      // Camera buttons
+      const toggleCamHandler = () => {
         ensureAudioContext();
-        if (state.cameraActive) {
-          stopSmartphoneCamera();
-        } else {
-          startSmartphoneCamera();
-        }
-      });
+        if (state.cameraActive) stopSmartphoneCamera();
+        else startSmartphoneCamera();
+      };
+      document.getElementById('btnToggleCamera').addEventListener('click', toggleCamHandler);
+      document.getElementById('btnFsCamera').addEventListener('click', toggleCamHandler);
 
-      // Camera Start / Stop
-      document.getElementById('btnToggleCamera').addEventListener('click', () => {
-        ensureAudioContext();
-        if (state.cameraActive) {
-          stopSmartphoneCamera();
-        } else {
-          startSmartphoneCamera();
-        }
-      });
-
-      // Flip Smartphone Camera (Front <-> Rear)
       document.getElementById('btnFlipCamera').addEventListener('click', () => {
         state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
-        if (state.cameraActive) {
-          startSmartphoneCamera();
-        }
+        if (state.cameraActive) startSmartphoneCamera();
       });
 
-      // Audio / Voice Cues Toggle
+      // Audio toggle
       document.getElementById('btnToggleAudio').addEventListener('click', () => {
         ensureAudioContext();
         state.audioEnabled = !state.audioEnabled;
         document.getElementById('audioIcon').textContent = state.audioEnabled ? '🔊' : '🔇';
-        document.getElementById('audioLabel').textContent = state.audioEnabled
-          ? '語音及音效：開 / Voice On'
-          : '語音及音效：關 / Muted';
+        document.getElementById('audioLabel').textContent = state.audioEnabled ? '語音開' : '靜音';
       });
 
-      // Reset Session Stats
+      // Reset session
       document.getElementById('btnResetSession').addEventListener('click', () => {
         ensureAudioContext();
         state.distanceMeters = 0;
         state.rocksDodged = 0;
-        state.bumpCount = 0;
         state.activeSeconds = 0;
         state.boatX = 0.5;
-        state.rightArmRaiseDeg = 90;
-        state.leftArmRaiseDeg = 90;
+        applySimpleSteer('center');
+        initRiverScene();
+      });
+
+      // Manual resume button inside posture pause modal
+      document.getElementById('btnResumeManual').addEventListener('click', () => {
         state.leftElbowDeg = 90;
         state.rightElbowDeg = 90;
         state.fistsPointingUp = true;
-        updateFistButtonUi();
-        syncSlidersFromState();
         evaluatePostureAndTilt();
-        initRiverScene();
-        speakEncouragement('紀錄已重置，準備出發！', 'Session reset! Ready to sail!', true);
       });
 
-      // Keyboard shortcuts for quick testing
+      // Keyboard Left/Right support
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
-          // Raise Right Arm higher -> Steer Left
-          state.rightArmRaiseDeg = Math.min(155, state.rightArmRaiseDeg + 6);
-          state.leftArmRaiseDeg = Math.max(45, state.leftArmRaiseDeg - 6);
-          syncSlidersFromState();
-          evaluatePostureAndTilt();
-        } else if (e.key === 'ArrowRight') {
-          // Raise Left Arm higher -> Steer Right
-          state.leftArmRaiseDeg = Math.min(155, state.leftArmRaiseDeg + 6);
-          state.rightArmRaiseDeg = Math.max(45, state.rightArmRaiseDeg - 6);
-          syncSlidersFromState();
-          evaluatePostureAndTilt();
-        } else if (e.key === ' ') {
-          e.preventDefault();
-          const nextAngle = state.leftElbowDeg >= 65 && state.leftElbowDeg <= 115 ? 150 : 90;
-          state.leftElbowDeg = nextAngle;
-          state.rightElbowDeg = nextAngle;
-          syncSlidersFromState();
-          evaluatePostureAndTilt();
-        }
+        if (e.key === 'ArrowLeft') applySimpleSteer('left');
+        else if (e.key === 'ArrowRight') applySimpleSteer('right');
+        else if (e.key === 'ArrowUp' || e.key === ' ') applySimpleSteer('center');
       });
-    }
-
-    function updateFistButtonUi() {
-      const btn = document.getElementById('btnToggleFistsUp');
-      if (state.fistsPointingUp) {
-        btn.textContent = '✅ 朝上 (Up)';
-        btn.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-500 text-slate-950 transition';
-      } else {
-        btn.textContent = '❌ 放下 (Down)';
-        btn.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-rose-500 text-white transition';
-      }
     }
 
     // =========================================================================
-    // 9. MAIN 60 FPS ANIMATION LOOP WITH NON-BLOCKING POSE TICK & FPS MONITOR
+    // 10. MAIN 60 FPS LOOP
     // =========================================================================
     let animFrameId = null;
     let fpsFrameCount = 0;
@@ -1787,9 +1361,7 @@
       if (now - fpsLastCheck >= 500) {
         const currentFps = Math.min(60, Math.round((fpsFrameCount * 1000) / (now - fpsLastCheck)));
         const fpsBadge = document.getElementById('fpsBadge');
-        if (fpsBadge) {
-          fpsBadge.textContent = `${currentFps} FPS`;
-        }
+        if (fpsBadge) fpsBadge.textContent = `${currentFps} FPS`;
         fpsFrameCount = 0;
         fpsLastCheck = now;
       }
@@ -1800,19 +1372,16 @@
       animFrameId = requestAnimationFrame(gameLoop);
     }
 
-    window.addEventListener('resize', () => {
-      resizeRiverCanvas();
-    });
+    window.addEventListener('resize', resizeRiverCanvas);
 
-    window.onload = () => {
+    window.addEventListener('load', () => {
       resizeRiverCanvas();
       initRiverScene();
       bindUiControls();
-      syncSlidersFromState();
       evaluatePostureAndTilt();
       if (animFrameId) cancelAnimationFrame(animFrameId);
       animFrameId = requestAnimationFrame(gameLoop);
-    };
+    });
   </script>
 </body>
 </html>
