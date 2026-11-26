@@ -130,9 +130,38 @@
         </button>
       </div>
 
+      <!-- 3 Simple Rehab Levels (No extra sliders on main screen) -->
+      <div class="mb-5">
+        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">
+          選擇復健寬鬆度 · Select Rehab Level
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-level="gentle" class="level-select-btn device-card-active rounded-2xl p-2.5 bg-slate-950 border-2 border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center">
+            <span class="text-xl">🌿</span>
+            <span class="text-xs sm:text-sm font-black text-emerald-300 mt-0.5">溫和初階</span>
+            <span class="text-[11px] text-slate-300 font-semibold">Gentle</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">小幅度即可轉彎</span>
+          </button>
+
+          <button type="button" data-level="standard" class="level-select-btn rounded-2xl p-2.5 bg-slate-950 border-2 border-slate-700 hover:border-sky-400 text-center transition flex flex-col items-center">
+            <span class="text-xl">⚖️</span>
+            <span class="text-xs sm:text-sm font-black text-sky-300 mt-0.5">標準復健</span>
+            <span class="text-[11px] text-slate-300 font-semibold">Standard</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">均衡寬鬆容錯</span>
+          </button>
+
+          <button type="button" data-level="active" class="level-select-btn rounded-2xl p-2.5 bg-slate-950 border-2 border-slate-700 hover:border-amber-400 text-center transition flex flex-col items-center">
+            <span class="text-xl">🔥</span>
+            <span class="text-xs sm:text-sm font-black text-amber-300 mt-0.5">進階挑戰</span>
+            <span class="text-[11px] text-slate-300 font-semibold">Active</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">較大抬臂幅度</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Confirm & Enter Game Button -->
       <button id="btnConfirmDevice" type="button" class="w-full py-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-lg shadow-xl transition">
-        ✅ 確認設備並開始航行 · Start Sailing
+        ✅ 確認並開始航行 · Start Sailing
       </button>
     </div>
   </div>
@@ -168,6 +197,11 @@
         <button id="btnToggleCamera" type="button" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition flex items-center gap-1.5">
           <span>📷</span>
           <span id="camBtnLabel">開啟鏡頭</span>
+        </button>
+
+        <button id="btnRecalibrate" type="button" class="hidden px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-purple-500/25 hover:bg-purple-500/40 text-purple-200 border border-purple-400/50 transition items-center gap-1">
+          <span>🎯</span>
+          <span>校正姿勢</span>
         </button>
 
         <button id="btnFlipCamera" type="button" class="hidden px-3 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition items-center gap-1">
@@ -299,6 +333,34 @@
         </button>
       </div>
 
+      <!-- 3-SECOND PERSONAL BASELINE CALIBRATION OVERLAY -->
+      <div id="calibrationOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/85 flex-col items-center justify-center p-4 text-center">
+        <div class="max-w-md w-full bg-slate-900 border-4 border-sky-400 rounded-3xl p-6 shadow-2xl">
+          <div class="text-4xl mb-2">🎯</div>
+          <span class="inline-block px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 font-black text-xs uppercase mb-2">
+            個人中心點校正 · Personal 0° Calibration
+          </span>
+          <h3 class="text-xl sm:text-2xl font-black text-white">
+            請保持您最舒適的雙臂姿勢
+          </h3>
+          <p class="text-sm text-sky-200 font-semibold mt-1">
+            Hold your comfortable pose to set your personal 0° center (even if shoulders are uneven).
+          </p>
+          <div id="calibCountdownNum" class="my-4 text-6xl font-black text-amber-300 tabular-nums">3</div>
+          <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+            <div id="calibProgressBar" class="h-full bg-sky-400 transition-all duration-150" style="width: 0%"></div>
+          </div>
+          <button id="btnSkipCalibration" type="button" class="mt-4 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 border border-slate-700">
+            略過校正 / Skip
+          </button>
+        </div>
+      </div>
+
+      <!-- SOFT GRACE-TIMER REMINDER PILL (Shown during 2-second grace window before pausing) -->
+      <div id="graceTimerPill" class="hidden pointer-events-none absolute top-24 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full bg-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow-xl border-2 border-white">
+        ⚠️ 請輕輕調整手肘姿勢（<span id="graceSecondsLeft">2.0</span> 秒後暫停）
+      </div>
+
       <!-- AUTO-PAUSE OVERLAY WHEN 90° ELBOW POSTURE IS LOST -->
       <div id="posturePauseOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/88 flex-col items-center justify-center p-4 text-center">
         <div class="max-w-md w-full bg-slate-900 border-4 border-amber-400 rounded-3xl p-5 shadow-2xl">
@@ -310,7 +372,7 @@
             請將雙手手肘彎曲至 90° 並握拳向上！
           </h3>
           <p id="pauseReasonEn" class="text-sm text-amber-200 font-semibold mt-1">
-            Bend both elbows to ~90° (65°–115°) with fists up to resume.
+            Comfortably bend elbows (45°–140°) with forearms angled up/forward to resume.
           </p>
           <div class="mt-4 grid grid-cols-2 gap-2.5 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-left">
             <div>
@@ -414,10 +476,54 @@
     // =========================================================================
     // 2. APPLICATION STATE
     // =========================================================================
+    const REHAB_LEVELS = {
+      gentle: {
+        labelZh: '溫和初階',
+        labelEn: 'Gentle',
+        elbowMin: 45,
+        elbowMax: 140,
+        graceMs: 2000,      // 2-second grace period before auto-pause
+        wristDropTol: 0.14, // Allows forearms angled forward/diagonal comfortably
+        deadzoneDeg: 10,    // Ignores small ±10° shoulder tremor/wobble
+        steerGain: 1.85,    // Small ~20° arm lift gives full turn
+        smoothAlpha: 0.30   // Heavy smoothing for shaky joints
+      },
+      standard: {
+        labelZh: '標準復健',
+        labelEn: 'Standard',
+        elbowMin: 45,
+        elbowMax: 140,
+        graceMs: 2000,
+        wristDropTol: 0.12,
+        deadzoneDeg: 8,
+        steerGain: 1.35,
+        smoothAlpha: 0.42
+      },
+      active: {
+        labelZh: '進階挑戰',
+        labelEn: 'Active',
+        elbowMin: 55,
+        elbowMax: 130,
+        graceMs: 1500,
+        wristDropTol: 0.08,
+        deadzoneDeg: 5,
+        steerGain: 1.05,
+        smoothAlpha: 0.55
+      }
+    };
+
     const state = {
       os: deviceInfo.os,
       selectedDevice: deviceInfo.defaultDevice, // 'phone' | 'tablet' | 'desktop'
+      rehabLevel: 'gentle',                     // 'gentle' | 'standard' | 'active'
       portraitTableMode: false,
+
+      // Personal 0° calibration & 2-second grace timer state
+      isCalibrating: false,
+      calibStartTime: 0,
+      calibSamples: [],
+      baselineArmDiff: 0,
+      invalidPostureSince: null,
 
       cameraActive: false,
       facingMode: 'user',
@@ -587,34 +693,118 @@
     // =========================================================================
     // 5. POSTURE GATE & SEESAW TILT EVALUATION
     // =========================================================================
+    function startPersonalCalibration() {
+      state.isCalibrating = true;
+      state.calibStartTime = performance.now();
+      state.calibSamples = [];
+      state.invalidPostureSince = null;
+      state.postureValid = true;
+
+      const overlay = document.getElementById('calibrationOverlay');
+      const pauseOverlay = document.getElementById('posturePauseOverlay');
+      if (pauseOverlay) { pauseOverlay.classList.add('hidden'); pauseOverlay.classList.remove('flex'); }
+      if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); }
+      speakEncouragement('請保持最舒適的雙臂姿勢，三秒校正個人中心點', 'Hold your comfortable pose for 3 seconds to calibrate your personal center.', true);
+    }
+
+    function finishPersonalCalibration(skipped = false) {
+      state.isCalibrating = false;
+      if (!skipped && state.calibSamples.length > 0) {
+        const sum = state.calibSamples.reduce((acc, v) => acc + v, 0);
+        state.baselineArmDiff = Math.round(sum / state.calibSamples.length);
+      } else if (skipped) {
+        state.baselineArmDiff = 0;
+      }
+      const overlay = document.getElementById('calibrationOverlay');
+      if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+      playSoundEffect('milestone');
+      speakEncouragement('個人姿勢校正完成！輕鬆抬臂開始航行！', 'Personal center calibrated! Raise either arm gently to steer!', true);
+    }
+
     function evaluatePostureAndTilt() {
-      const leftElbowOk = state.leftElbowDeg >= 65 && state.leftElbowDeg <= 115;
-      const rightElbowOk = state.rightElbowDeg >= 65 && state.rightElbowDeg <= 115;
+      const cfg = REHAB_LEVELS[state.rehabLevel] || REHAB_LEVELS.gentle;
+      const now = performance.now();
+      const gracePill = document.getElementById('graceTimerPill');
+      const graceSecEl = document.getElementById('graceSecondsLeft');
+
+      // During 3-second calibration, hold river steady and collect comfortable baseline samples
+      if (state.isCalibrating && state.cameraActive) {
+        const elapsed = now - state.calibStartTime;
+        const remainSec = Math.max(0, Math.ceil((3000 - elapsed) / 1000));
+        const pct = Math.min(100, Math.round((elapsed / 3000) * 100));
+        const numEl = document.getElementById('calibCountdownNum');
+        const barEl = document.getElementById('calibProgressBar');
+        if (numEl) numEl.textContent = remainSec > 0 ? remainSec : '✓';
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (gracePill) gracePill.classList.add('hidden');
+        state.targetTiltDeg = 0;
+        if (elapsed >= 3000) {
+          finishPersonalCalibration(false);
+        }
+        return;
+      }
+
+      const leftElbowOk = state.leftElbowDeg >= cfg.elbowMin && state.leftElbowDeg <= cfg.elbowMax;
+      const rightElbowOk = state.rightElbowDeg >= cfg.elbowMin && state.rightElbowDeg <= cfg.elbowMax;
       const fistsOk = state.fistsPointingUp;
+      const rawPostureOk = !state.cameraActive || (leftElbowOk && rightElbowOk && fistsOk);
 
       const wasValid = state.postureValid;
-      state.postureValid = !state.cameraActive || (leftElbowOk && rightElbowOk && fistsOk);
+
+      // 2-Second Grace Timer before triggering Auto-Pause
+      if (rawPostureOk) {
+        state.invalidPostureSince = null;
+        state.postureValid = true;
+        if (gracePill) gracePill.classList.add('hidden');
+      } else {
+        if (state.invalidPostureSince === null) {
+          state.invalidPostureSince = now;
+        }
+        const invalidDuration = now - state.invalidPostureSince;
+        if (invalidDuration < cfg.graceMs) {
+          // Still inside forgiving grace window — keep sailing and show soft countdown pill
+          state.postureValid = true;
+          if (gracePill && graceSecEl) {
+            gracePill.classList.remove('hidden');
+            graceSecEl.textContent = ((cfg.graceMs - invalidDuration) / 1000).toFixed(1);
+          }
+        } else {
+          state.postureValid = false;
+          if (gracePill) gracePill.classList.add('hidden');
+        }
+      }
 
       if (!state.postureValid) {
         if (!fistsOk) {
-          state.pauseReasonZh = '請將雙拳向上舉起（手腕高於手肘）！';
-          state.pauseReasonEn = 'Point both fists upward (wrists above elbows) to resume.';
+          state.pauseReasonZh = '請輕輕抬起前臂，避免手腕垂得太低！';
+          state.pauseReasonEn = 'Lift forearms slightly forward/upward so wrists stay near elbow height.';
         } else {
-          state.pauseReasonZh = `請將手肘彎曲至 90°（左 ${state.leftElbowDeg}° / 右 ${state.rightElbowDeg}°）`;
-          state.pauseReasonEn = 'Bend both elbows into 65°–115° to resume sailing.';
+          state.pauseReasonZh = `請輕鬆彎曲手肘（左 ${state.leftElbowDeg}° / 右 ${state.rightElbowDeg}°，安全範圍 ${cfg.elbowMin}°–${cfg.elbowMax}°）`;
+          state.pauseReasonEn = `Bend elbows comfortably into ${cfg.elbowMin}°–${cfg.elbowMax}° to resume.`;
         }
         if (wasValid) {
           playSoundEffect('pauseWarn');
-          speakEncouragement('請將手肘彎曲九十度，握拳向上', 'Bend elbows to 90 degrees with fists up.', true);
+          speakEncouragement('請輕鬆彎曲手肘並抬起前臂，即可繼續航行', 'Bend elbows comfortably and lift forearms slightly to resume.', true);
         }
       } else if (!wasValid && state.postureValid) {
         playSoundEffect('dodge');
-        speakEncouragement('姿勢標準！繼續航行！', 'Great posture! Sailing resumed!', true);
+        speakEncouragement('做得好！繼續輕鬆航行！', 'Great job! Sailing resumed!', true);
       }
 
-      // Seesaw Physics: Raise Right Arm higher -> Tilt/Steer Left (negative angle)
-      const armDiff = state.rightArmRaiseDeg - state.leftArmRaiseDeg;
-      state.targetTiltDeg = Math.max(-42, Math.min(42, -armDiff * 1.25));
+      // Seesaw Physics with Personal 0° Baseline Calibration & Tremor Deadzone
+      const rawArmDiff = state.rightArmRaiseDeg - state.leftArmRaiseDeg;
+      const calibratedDiff = state.cameraActive ? (rawArmDiff - state.baselineArmDiff) : rawArmDiff;
+
+      let effectiveDiff = 0;
+      if (state.cameraActive) {
+        if (Math.abs(calibratedDiff) > cfg.deadzoneDeg) {
+          effectiveDiff = Math.sign(calibratedDiff) * (Math.abs(calibratedDiff) - cfg.deadzoneDeg);
+        }
+      } else {
+        effectiveDiff = calibratedDiff;
+      }
+
+      state.targetTiltDeg = Math.max(-42, Math.min(42, -effectiveDiff * cfg.steerGain));
 
       // Update Pause Overlay only when invalid or state flipped
       const overlay = document.getElementById('posturePauseOverlay');
@@ -626,9 +816,9 @@
           document.getElementById('pauseReasonEn').textContent = state.pauseReasonEn;
           const lEl = document.getElementById('pauseLeftAngle');
           const rEl = document.getElementById('pauseRightAngle');
-          lEl.textContent = `${state.leftElbowDeg}° ${leftElbowOk ? '(OK)' : '(需 65°–115°)'}`;
+          lEl.textContent = `${state.leftElbowDeg}° ${leftElbowOk ? '(OK)' : `(需 ${cfg.elbowMin}°–${cfg.elbowMax}°)`}`;
           lEl.className = `text-lg font-black ${leftElbowOk ? 'text-emerald-400' : 'text-rose-400'}`;
-          rEl.textContent = `${state.rightElbowDeg}° ${rightElbowOk ? '(OK)' : '(需 65°–115°)'}`;
+          rEl.textContent = `${state.rightElbowDeg}° ${rightElbowOk ? '(OK)' : `(需 ${cfg.elbowMin}°–${cfg.elbowMax}°)`}`;
           rEl.className = `text-lg font-black ${rightElbowOk ? 'text-emerald-400' : 'text-rose-400'}`;
         } else {
           overlay.classList.add('hidden');
@@ -726,12 +916,19 @@
         const rawRRaise = calculateAngle(rHip, rShoulder, rElbow);
         const rawLRaise = calculateAngle(lHip, lShoulder, lElbow);
 
-        state.rightElbowDeg = Math.round(state.rightElbowDeg * 0.35 + rawRElbow * 0.65);
-        state.leftElbowDeg  = Math.round(state.leftElbowDeg * 0.35 + rawLElbow * 0.65);
-        state.rightArmRaiseDeg = Math.round(state.rightArmRaiseDeg * 0.35 + rawRRaise * 0.65);
-        state.leftArmRaiseDeg  = Math.round(state.leftArmRaiseDeg * 0.35 + rawLRaise * 0.65);
+        const cfg = REHAB_LEVELS[state.rehabLevel] || REHAB_LEVELS.gentle;
+        const a = cfg.smoothAlpha;
+        state.rightElbowDeg = Math.round(state.rightElbowDeg * (1 - a) + rawRElbow * a);
+        state.leftElbowDeg  = Math.round(state.leftElbowDeg * (1 - a) + rawLElbow * a);
+        state.rightArmRaiseDeg = Math.round(state.rightArmRaiseDeg * (1 - a) + rawRRaise * a);
+        state.leftArmRaiseDeg  = Math.round(state.leftArmRaiseDeg * (1 - a) + rawLRaise * a);
 
-        state.fistsPointingUp = (rWrist.y < rElbow.y + 0.05) && (lWrist.y < lElbow.y + 0.05);
+        // Relaxed forearm check: allows forward/diagonal forearms, only flags if wrists drop far below elbows
+        state.fistsPointingUp = (rWrist.y < rElbow.y + cfg.wristDropTol) && (lWrist.y < lElbow.y + cfg.wristDropTol);
+
+        if (state.isCalibrating) {
+          state.calibSamples.push(state.rightArmRaiseDeg - state.leftArmRaiseDeg);
+        }
         evaluatePostureAndTilt();
       } catch (e) {
         // Skip single bad frame silently
@@ -774,10 +971,12 @@
         camBtnLabel.textContent = '關閉鏡頭';
         flipBtn.classList.remove('hidden');
         flipBtn.classList.add('flex');
+        const recalBtn = document.getElementById('btnRecalibrate');
+        if (recalBtn) { recalBtn.classList.remove('hidden'); recalBtn.classList.add('flex'); }
         sourceBadge.textContent = `📷 鏡頭即時偵測 (${activeDelegate})`;
         sourceBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
 
-        speakEncouragement('鏡頭已開啟！請彎曲手肘九十度並握拳向上', 'Camera ready! Bend elbows to 90 degrees with fists up.', true);
+        startPersonalCalibration();
       } catch (err) {
         state.cameraActive = false;
         videoEl.classList.add('opacity-0');
@@ -801,6 +1000,14 @@
       }
       document.getElementById('camBtnLabel').textContent = '開啟鏡頭';
       document.getElementById('btnFlipCamera').classList.add('hidden');
+      const recalBtn = document.getElementById('btnRecalibrate');
+      if (recalBtn) recalBtn.classList.add('hidden');
+      state.isCalibrating = false;
+      state.invalidPostureSince = null;
+      const calibOv = document.getElementById('calibrationOverlay');
+      if (calibOv) { calibOv.classList.add('hidden'); calibOv.classList.remove('flex'); }
+      const gPill = document.getElementById('graceTimerPill');
+      if (gPill) gPill.classList.add('hidden');
       const sourceBadge = document.getElementById('inputSourceBadge');
       sourceBadge.textContent = '🕹️ 按鍵模式（可隨時開啟鏡頭）';
       sourceBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30';
@@ -997,7 +1204,7 @@
 
       state.boatTiltDeg += (state.targetTiltDeg - state.boatTiltDeg) * 0.14;
 
-      if (state.postureValid) {
+      if (state.postureValid && !state.isCalibrating) {
         const now = performance.now();
         if (now - state.lastSecondTick >= 1000) {
           state.activeSeconds += 1;
@@ -1222,7 +1429,20 @@
       const osShort = state.os === 'ios' ? 'iOS' : (state.os === 'android' ? 'Android' : '電腦');
       const devLabel = DEVICE_PROFILES[deviceKey]?.label || '手機';
       const icon = deviceKey === 'phone' ? '📱' : (deviceKey === 'tablet' ? '📲' : '💻');
-      document.getElementById('headerDeviceBadge').textContent = `${icon} ${osShort} · ${devLabel}`;
+      const lvlLabel = REHAB_LEVELS[state.rehabLevel]?.labelZh || '溫和初階';
+      document.getElementById('headerDeviceBadge').textContent = `${icon} ${osShort} ${devLabel} · ${lvlLabel}`;
+    }
+
+    function applyRehabLevel(levelKey) {
+      state.rehabLevel = levelKey;
+      document.querySelectorAll('.level-select-btn').forEach(btn => {
+        if (btn.getAttribute('data-level') === levelKey) {
+          btn.classList.add('device-card-active');
+        } else {
+          btn.classList.remove('device-card-active');
+        }
+      });
+      applySelectedDevice(state.selectedDevice);
     }
 
     function applySimpleSteer(dir) {
@@ -1259,6 +1479,23 @@
         btn.addEventListener('click', () => {
           applySelectedDevice(btn.getAttribute('data-device'));
         });
+      });
+
+      // Rehab Level cards (Gentle / Standard / Active)
+      document.querySelectorAll('.level-select-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyRehabLevel(btn.getAttribute('data-level'));
+        });
+      });
+
+      // Recalibrate & Skip Calibration buttons
+      document.getElementById('btnRecalibrate').addEventListener('click', () => {
+        ensureAudioContext();
+        if (state.cameraActive) startPersonalCalibration();
+      });
+      document.getElementById('btnSkipCalibration').addEventListener('click', () => {
+        ensureAudioContext();
+        finishPersonalCalibration(true);
       });
 
       // Confirm device modal
@@ -1367,6 +1604,9 @@
       }
 
       tickPoseInference(now);
+      if (state.cameraActive && (state.isCalibrating || state.invalidPostureSince !== null)) {
+        evaluatePostureAndTilt();
+      }
       updateAndRenderRiver();
       renderPipSkeleton();
       animFrameId = requestAnimationFrame(gameLoop);
